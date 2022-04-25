@@ -1,0 +1,4 @@
+pykeen
+pytorch
+numpy
+wandb
