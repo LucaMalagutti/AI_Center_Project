@@ -1,4 +1,4 @@
 pykeen
-pytorch
+torch
 numpy
 wandb
