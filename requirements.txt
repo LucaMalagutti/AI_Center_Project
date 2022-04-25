@@ -1,4 +1,1 @@
 pykeen
-torch
-numpy
-wandb

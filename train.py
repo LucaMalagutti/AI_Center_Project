@@ -2,6 +2,9 @@
 #TODO Setup ReadME
 
 from pykeen.pipeline import pipeline
+import dotenv
+
+dotenv.load_dotenv(override=True)
 
 pipeline_result = pipeline(
      dataset='wn18rr',
@@ -35,7 +38,7 @@ pipeline_result = pipeline(
      result_tracker='wandb',
      result_tracker_kwargs=dict(
         project='tucker_wn18rr',
-        entity = 'aruzzi'
+        entity = 'eth_ai_center_kg_project'
      ),
 )
 pipeline_result.save_to_directory('results/wn18rr_tucker')
