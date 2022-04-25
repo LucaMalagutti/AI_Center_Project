@@ -38,9 +38,9 @@ pipeline_result = pipeline(
      training_kwargs=dict(
        num_epochs=500,
        batch_size = 128,
-       checkpoint_name='my_checkpoint.pt',
-       checkpoint_frequency=50,
-       checkpoint_directory='checkpoints',
+       #checkpoint_name='my_checkpoint.pt',
+       #checkpoint_frequency=50,
+       #checkpoint_directory='checkpoints',
        label_smoothing = 0.1
     ),
      evaluator_kwargs=dict(
