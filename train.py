@@ -8,10 +8,33 @@ dotenv.load_dotenv(override=True)
 
 pipeline_result = pipeline(
      dataset='wn18rr',
+     dataset_kwargs = dict(
+      create_inverse_triples = True
+     ),
      model='TuckER',
-     loss='bcewithlogits',
-     training_loop='sLCWA', # maybe needs to be changed
-     negative_sampler='basic', # maybe needs to be changed
+     model_kwargs=dict(
+        embedding_dim = 200 ,
+        relation_dim = 30,
+        dropout_0 = 0.2,
+        dropout_1 = 0.2,
+        dropout_2 = 0.3,
+        apply_batch_normalization = True,
+        entity_initializer = "xavier_normal",
+        relation_initializer = "xavier_normal",
+     ),
+     optimizer = 'Adam',
+     optimizer_kwargs = dict(
+         lr = 0.01,
+     ),
+     lr_scheduler='ExponentialLR',
+     lr_scheduler_kwargs=dict(
+         gamma=1.0,
+     ),
+     loss='bceaftersigmoid',
+     loss_kwargs=dict(
+         reduction = 'mean',
+     ),
+     training_loop='LCWA',
      training_kwargs=dict(
        num_epochs=500,
        batch_size = 128,
@@ -20,25 +43,14 @@ pipeline_result = pipeline(
        checkpoint_directory='checkpoints',
        label_smoothing = 0.1
     ),
-     model_kwargs=dict(
-        embedding_dim = 200 ,
-        relation_dim = 30,
-        dropout_0 = 0.2,
-        dropout_1 = 0.2,
-        dropout_2 = 0.3,
-     ),
-     optimizer = 'Adam',
-     optimizer_kwargs = dict(
-         lr = 0.003,
-     ),
-     lr_scheduler='ExponentialLR',
-     lr_scheduler_kwargs=dict(
-         gamma=1.0,
+     evaluator_kwargs=dict(
+         filtered = True,
      ),
      result_tracker='wandb',
      result_tracker_kwargs=dict(
         project='tucker_wn18rr',
-        entity = 'eth_ai_center_kg_project'
+        #entity = 'eth_ai_center_kg_project'
      ),
 )
+
 pipeline_result.save_to_directory('results/wn18rr_tucker')
