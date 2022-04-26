@@ -5,3 +5,7 @@
 
 /results/* 
 !.gitkeep
+
+word_vectors/*
+
+__pycache__

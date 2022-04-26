@@ -3,8 +3,14 @@
 
 from pykeen.pipeline import pipeline
 import dotenv
+from pykeen.nn.init import PretrainedInitializer
+import w2v
 
 dotenv.load_dotenv(override=True)
+
+dataset_name = "WN18RR"
+
+#entity_initializer = PretrainedInitializer(w2v.get_emb_matrix("word_vectors/cc.en.300.bin", dataset_name))
 
 pipeline_result = pipeline(
      dataset='wn18rr',
