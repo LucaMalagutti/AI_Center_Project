@@ -8,10 +8,9 @@ import w2v
 
 dotenv.load_dotenv(override=True)
 
-
 dataset_name = "WN18RR"
 
-#entity_initializer = PretrainedInitializer(w2v.get_emb_matrix("word_vectors/cc.en.300.bin", dataset_name))
+entity_initializer_matrix = PretrainedInitializer(w2v.get_emb_matrix("word_vectors/cc.en.300.bin", dataset_name))
 
 pipeline_result = pipeline(
      dataset='wn18rr',
@@ -21,13 +20,13 @@ pipeline_result = pipeline(
      ),
      model='TuckER',
      model_kwargs=dict(
-        embedding_dim = 200 ,
+        embedding_dim = 300 ,
         relation_dim = 30,
         dropout_0 = 0.2,
         dropout_1 = 0.2,
         dropout_2 = 0.3,
         apply_batch_normalization = True,
-        entity_initializer = "xavier_normal",
+        entity_initializer = entity_initializer_matrix,
         relation_initializer = "xavier_normal",
      ),
      optimizer = 'Adam',

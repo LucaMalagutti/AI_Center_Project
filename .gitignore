@@ -7,5 +7,6 @@
 !.gitkeep
 
 word_vectors/*
+!.gitkeep
 
 __pycache__
