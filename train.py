@@ -2,15 +2,16 @@
 #TODO Setup ReadME
 
 from pykeen.pipeline import pipeline
-import dotenv
 from pykeen.nn.init import PretrainedInitializer
 import w2v
 
-dotenv.load_dotenv(override=True)
-
 dataset_name = "WN18RR"
 
-entity_initializer_matrix = PretrainedInitializer(w2v.get_emb_matrix("word_vectors/cc.en.300.bin", dataset_name))
+embeddings_dim = 200
+
+fasttext_entity_initializer = PretrainedInitializer(w2v.get_emb_matrix("word_vectors/cc.en.200.bin", embeddings_dim, sub_word=True, dataset_name=dataset_name))
+
+glove_entity_initializer = PretrainedInitializer(w2v.get_emb_matrix("word_vectors/glove-wiki-gigaword-200.bin", embeddings_dim, sub_word=False, dataset_name=dataset_name))
 
 pipeline_result = pipeline(
      dataset='wn18rr',
@@ -20,13 +21,13 @@ pipeline_result = pipeline(
      ),
      model='TuckER',
      model_kwargs=dict(
-        embedding_dim = 300 ,
+        embedding_dim = embeddings_dim ,
         relation_dim = 30,
         dropout_0 = 0.2,
         dropout_1 = 0.2,
         dropout_2 = 0.3,
         apply_batch_normalization = True,
-        entity_initializer = entity_initializer_matrix,
+        entity_initializer = fasttext_entity_initializer,
         relation_initializer = "xavier_normal",
      ),
      optimizer = 'Adam',
@@ -53,12 +54,7 @@ pipeline_result = pipeline(
      evaluator_kwargs=dict(
          filtered = True,
      ),
-     result_tracker='wandb',
-     result_tracker_kwargs=dict(
-        project='tucker_wn18rr',
-        #entity = 'eth_ai_center_kg_project'
-     ),
 )
 
 
-pipeline_result.save_to_directory('results/wn18rr_tucker')
+pipeline_result.save_to_directory('results/wn18rr_tucker_fasttext_200')
