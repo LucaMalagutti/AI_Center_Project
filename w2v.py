@@ -50,9 +50,9 @@ def get_emb_matrix(init_embeddings_path, embedding_dim, sub_word=True, dataset_n
 
     id_word_dict = get_id_word_dict(dataset_name, sub_word)
 
-    if "cc.en.200.bin" in init_embeddings_path:
+    if "cc" in init_embeddings_path:
         w2v_model = load_facebook_model(init_embeddings_path).wv
-    elif "glove-wiki-gigaword-200.bin" in init_embeddings_path:
+    elif "glove" in init_embeddings_path:
         w2v_model = gensim.models.KeyedVectors.load_word2vec_format(init_embeddings_path, binary=True)
 
     emb_matrix = np.zeros((len(entity_dict), embedding_dim))

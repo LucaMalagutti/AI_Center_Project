@@ -1,2 +1,5 @@
 pykeen
 dotenv
+pathlib
+json
+yaml
