@@ -7,11 +7,13 @@ import w2v
 
 dataset_name = "WN18RR"
 
-embeddings_dim = 200
+embedding_dim = 200
 
-fasttext_entity_initializer = PretrainedInitializer(w2v.get_emb_matrix("word_vectors/cc.en.200.bin", embeddings_dim, sub_word=True, dataset_name=dataset_name))
+fasttext_entity_initializer = PretrainedInitializer(w2v.get_emb_matrix("word_vectors/cc.en.200.bin", embedding_dim, sub_word=True, dataset_name=dataset_name))
 
-glove_entity_initializer = PretrainedInitializer(w2v.get_emb_matrix("word_vectors/glove-wiki-gigaword-200.bin", embeddings_dim, sub_word=False, dataset_name=dataset_name))
+glove_entity_initializer = PretrainedInitializer(w2v.get_emb_matrix("word_vectors/glove-wiki-gigaword-200.bin", embedding_dim, sub_word=False, dataset_name=dataset_name))
+
+run_name = f"glove_{embedding_dim}_{dataset_name}"
 
 pipeline_result = pipeline(
      dataset='wn18rr',
@@ -21,13 +23,13 @@ pipeline_result = pipeline(
      ),
      model='TuckER',
      model_kwargs=dict(
-        embedding_dim = embeddings_dim ,
+        embedding_dim = embedding_dim,
         relation_dim = 30,
         dropout_0 = 0.2,
         dropout_1 = 0.2,
         dropout_2 = 0.3,
         apply_batch_normalization = True,
-        entity_initializer = fasttext_entity_initializer,
+        entity_initializer = glove_entity_initializer,
         relation_initializer = "xavier_normal",
      ),
      optimizer = 'Adam',
@@ -54,7 +56,15 @@ pipeline_result = pipeline(
      evaluator_kwargs=dict(
          filtered = True,
      ),
+     metadata= dict(
+        title = run_name,
+    ),
+     result_tracker='wandb',
+     result_tracker_kwargs=dict(
+        project='W2V_for_KGs',
+        entity = 'eth_ai_center_kg_project',
+     ),
 )
 
 
-pipeline_result.save_to_directory('results/wn18rr_tucker_fasttext_200')
+pipeline_result.save_to_directory(f'results/{run_name}')

@@ -15,8 +15,8 @@ def dict_entry_from_line(line, sub_word=True):
         word = word_list[2:-2]
     return idx, word
 
-def get_vector_from_word_list(word_list, word_vectors, embeddings_dim):
-    vector = np.zeros(embeddings_dim)
+def get_vector_from_word_list(word_list, word_vectors, embedding_dim):
+    vector = np.zeros(embedding_dim)
     for word in word_list:
         try:
             vector += word_vectors[word]
@@ -28,7 +28,6 @@ def get_vector_from_word_list(word_list, word_vectors, embeddings_dim):
 
 
 def get_id_word_dict(dataset_name, sub_word=True):
-
     if dataset_name == "WN18RR":
         id_word_dict = {}
         with open("aux_data/WN18RR/wordnet-mlj12-definitions.txt", "r") as f:
@@ -40,7 +39,7 @@ def get_id_word_dict(dataset_name, sub_word=True):
         pass
 
 
-def get_emb_matrix(init_embeddings_path, embeddings_dim, sub_word=True, dataset_name=None):
+def get_emb_matrix(init_embeddings_path, embedding_dim, sub_word=True, dataset_name=None):
 
     if dataset_name == "WN18RR":
         dataset = WN18RR()
@@ -56,13 +55,13 @@ def get_emb_matrix(init_embeddings_path, embeddings_dim, sub_word=True, dataset_
     elif "glove-wiki-gigaword-200.bin" in init_embeddings_path:
         w2v_model = gensim.models.KeyedVectors.load_word2vec_format(init_embeddings_path, binary=True)
 
-    emb_matrix = np.zeros((len(entity_dict), embeddings_dim))
+    emb_matrix = np.zeros((len(entity_dict), embedding_dim))
 
     for entity_id in entity_dict:
         entity_emb_idx = entity_dict[entity_id]
         if sub_word:
             emb_matrix[entity_emb_idx, :] = w2v_model[id_word_dict[entity_id]]
         else:
-            emb_matrix[entity_emb_idx, :] = get_vector_from_word_list(id_word_dict[entity_id], w2v_model, embeddings_dim)
+            emb_matrix[entity_emb_idx, :] = get_vector_from_word_list(id_word_dict[entity_id], w2v_model, embedding_dim)
 
     return torch.from_numpy(emb_matrix.astype(np.float32))
