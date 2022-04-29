@@ -1,6 +1,3 @@
-#TODO ReadMe with env variables
-#TODO Setup ReadME
-
 from pykeen.pipeline import pipeline
 from pykeen.nn.init import PretrainedInitializer
 import w2v
@@ -14,6 +11,10 @@ from typing import (
     Union,
 )
 import os
+import dotenv
+
+# Load environment variables from `.env`.
+dotenv.load_dotenv(override=True)
 
 def load_configuration(path: Union[str, pathlib.Path, os.PathLike]) -> Mapping[str, Any]:
     """Load a configuration from a JSON or YAML file."""
@@ -40,12 +41,17 @@ def get_entity_initializer(init:str, embedding_dim, dataset_name):
         entity_initializer = "xavier_normal"
     return entity_initializer
 
-def pipeline_from_config(dataset_name: str,model_name :str,init: str):
+def pipeline_from_config(dataset_name: str,model_name :str,init: str, embdim : int):
     """Initialize pipeline parameters from config file."""
 
     config_path = f"./config/{model_name.lower()}_{dataset_name.lower()}.json"
     config = load_configuration(config_path)
-    embedding_dim = config["pipeline"]["model_kwargs"]["embedding_dim"]
+
+    if embdim is None:
+        embedding_dim = config["pipeline"]["model_kwargs"]["embedding_dim"]
+    else:
+        embedding_dim = embdim
+
     entity_initializer = get_entity_initializer(init, embedding_dim, dataset_name)
     config["pipeline"]["model_kwargs"]["entity_initializer"] = entity_initializer
 
@@ -74,8 +80,10 @@ if __name__ == '__main__':
                     help="Which dataset to use: fb15k237 or wn18rr.")
     parser.add_argument("--model", type=str, default="tucker", nargs="?",
                     help="Whihc model to train: tucker")
-    parser.add_argument("--init", type=str, default="w2v", nargs="?",
+    parser.add_argument("--init", type=str, default="baseline", nargs="?",
                     help="How to initialise embeddings: baseline, w2v, glove")
+    parser.add_argument("--embdim", type=int, default=None, nargs="?",
+                    help="Dimension of embedding vectors, if None then embedding_dim in the .json file will be used")
 
     args = parser.parse_args()
-    pipeline_from_config(args.dataset,args.model,args.init)
+    pipeline_from_config(args.dataset,args.model,args.init,args.embdim)
