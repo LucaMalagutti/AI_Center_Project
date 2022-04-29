@@ -3,3 +3,6 @@ dotenv
 pathlib
 json
 yaml
+gensim
+fasttext
+wget

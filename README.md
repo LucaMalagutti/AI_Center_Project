@@ -3,10 +3,12 @@
 Project repo containing the code developed for the course " AI Center Projects in Machine Learning Research" held at ETH Zurich in Spring 2022
 
 ## Table of Contents
-- [How to run](#How-to-run)
-- [Supported datasets](#Supported-datasets)
-- [Supported KG models](#Supported-models)
-- [Supported Language models](#Supported-models)
+- [AI_Center_Project](#ai_center_project)
+  - [Table of Contents](#table-of-contents)
+  - [How to run](#how-to-run)
+  - [Supported datasets](#supported-datasets)
+  - [Supported KG models](#supported-kg-models)
+  - [Supported Language models](#supported-language-models)
 
 ## How to run
 
@@ -34,7 +36,9 @@ pip install -r requirements.txt
 ```
 
 **Step 4:** Download Emdeddings file and save it in ``./word_vectors/``.
-TODO explain better this step.
+```console
+python prep_models.py --models w2v glove fasttext fasttext_300
+```
 
 **Step 5:** Train the model with your embeddings. Example of how to train:
 ```console
