@@ -10,3 +10,6 @@ word_vectors/*
 !.gitkeep
 
 __pycache__
+explore.ipynb
+.ipynb_checkpoints/explore-checkpoint.ipynb
+.DS_Store
