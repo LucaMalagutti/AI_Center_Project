@@ -5,3 +5,4 @@ gensim
 fasttext
 wget
 wandb
+transformers
