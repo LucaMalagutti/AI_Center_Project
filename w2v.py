@@ -14,6 +14,19 @@ def dict_entry_from_line(line, sub_word=True):
     else:
         word = word_list[2:-2]
     return idx, word
+    
+
+def get_id_word_dict(dataset_name, sub_word=True):
+    if dataset_name == "WN18RR":
+        id_word_dict = {}
+        with open("aux_data/WN18RR/wordnet-mlj12-definitions.txt", "r") as f:
+            for line in f:
+                sense_id, word = dict_entry_from_line(line, sub_word)
+                id_word_dict[sense_id] = word
+        return id_word_dict
+    else:
+        raise NotImplementedError
+
 
 def get_vector_from_word_list(word_list, word_vectors, embedding_dim):
     vector = np.zeros(embedding_dim)
@@ -25,18 +38,6 @@ def get_vector_from_word_list(word_list, word_vectors, embedding_dim):
             torch.nn.init.normal_(tmp)
             vector += tmp.numpy()
     return vector/len(word_list)
-
-
-def get_id_word_dict(dataset_name, sub_word=True):
-    if dataset_name == "WN18RR":
-        id_word_dict = {}
-        with open("aux_data/WN18RR/wordnet-mlj12-definitions.txt", "r") as f:
-            for line in f:
-                sense_id, word = dict_entry_from_line(line, sub_word)
-                id_word_dict[sense_id] = word
-        return id_word_dict
-    else:
-        pass
 
 
 def get_emb_matrix(init_embeddings_path, embedding_dim, sub_word=True, dataset_name=None):

@@ -1,8 +1,7 @@
 pykeen
-dotenv
+python-dotenv
 pathlib
-json
-yaml
 gensim
 fasttext
 wget
+wandb

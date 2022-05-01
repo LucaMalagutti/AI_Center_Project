@@ -4,6 +4,8 @@ import w2v
 import json
 import argparse
 import pathlib
+import pickle
+import torch
 import yaml
 from typing import (
     Any,
@@ -37,6 +39,12 @@ def get_entity_initializer(init:str, embedding_dim, dataset_name):
         entity_initializer = PretrainedInitializer(w2v.get_emb_matrix(f"word_vectors/cc.en.{embedding_dim}.bin", embedding_dim, sub_word=True, dataset_name=dataset_name.upper()))
     elif init == "glove":
         entity_initializer = PretrainedInitializer(w2v.get_emb_matrix(f"word_vectors/glove-wiki-gigaword-{embedding_dim}.bin", embedding_dim, sub_word=False, dataset_name=dataset_name.upper()))
+    elif init == "bert":
+        with open('word_vectors/bert-mini_no_def.pickle', 'rb') as f:
+            bert_emb_matrix = pickle.load(f)
+        print(bert_emb_matrix.shape) # prints torch.Size([40559, 256])
+        
+        entity_initializer = PretrainedInitializer(bert_emb_matrix)
     else:
         entity_initializer = "xavier_normal"
     return entity_initializer
@@ -53,10 +61,11 @@ def pipeline_from_config(dataset_name: str,model_name :str,init: str, embdim : i
         embedding_dim = embdim
 
     entity_initializer = get_entity_initializer(init, embedding_dim, dataset_name)
+
     config["pipeline"]["model_kwargs"]["entity_initializer"] = entity_initializer
+    config["pipeline"]["model_kwargs"]["embedding_dim"] = embedding_dim
 
     run_name = f"{init}_{embedding_dim}_{model_name}_{dataset_name}"
-    
 
     pipeline_kwargs = config["pipeline"]
     pipeline_result = pipeline(
@@ -81,7 +90,7 @@ if __name__ == '__main__':
     parser.add_argument("--model", type=str, default="tucker", nargs="?",
                     help="Whihc model to train: tucker")
     parser.add_argument("--init", type=str, default="baseline", nargs="?",
-                    help="How to initialise embeddings: baseline, w2v, glove")
+                    help="How to initialise embeddings: baseline, w2v, glove, bert")
     parser.add_argument("--embdim", type=int, default=None, nargs="?",
                     help="Dimension of embedding vectors, if None then embedding_dim in the .json file will be used")
 
