@@ -75,7 +75,7 @@ def pipeline_from_config(dataset_name: str,model_name :str,init: str, embdim : i
         result_tracker='wandb',
         result_tracker_kwargs=dict(
             project='W2V_for_KGs',
-            entity = 'eth_ai_center_kg_project',
+            entity = 'eth_ai_center_kg_project'
         ),
         **pipeline_kwargs
     )

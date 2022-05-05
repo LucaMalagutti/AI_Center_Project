@@ -6,6 +6,11 @@
       },
       "random_seed" : 20,
       "model": "TuckER",
+      "stopper": "early",
+      "stopper_kwargs":{
+        "frequency":1,
+        "patience":10
+      },
       "model_kwargs": {
         "embedding_dim": 200,
         "relation_dim": 30,
