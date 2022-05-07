@@ -121,8 +121,8 @@ def pipeline_from_config(
         ),
         result_tracker="wandb",
         result_tracker_kwargs=dict(
-            project="W2V_for_KGs",
-            entity="eth_ai_center_kg_project",
+            project='W2V_for_KGs',
+            entity = 'eth_ai_center_kg_project'
         ),
         **pipeline_kwargs,
     )

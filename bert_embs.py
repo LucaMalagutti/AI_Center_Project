@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from transformers import AutoTokenizer, AutoModel
-from w2v import get_id_word_dict
+from w2v import get_id_word_dict, get_id_description_dict
 import pickle
 from tqdm import tqdm
 from pykeen.datasets import WN18RR
@@ -38,7 +38,7 @@ def get_word_vector(sent, idx_list, tokenizer, model, layers):
     return get_hidden_states(encoded, token_ids_words, model, layers)
 
 
-def main(layers=[-1], dataset_name="WN18RR", embedding_dim=256):
+def main(layers=[-1], dataset_name="WN18RR", embedding_dim=256, use_entity_descriptions=False):
     tokenizer = AutoTokenizer.from_pretrained("prajjwal1/bert-mini")
     model = AutoModel.from_pretrained("prajjwal1/bert-mini", output_hidden_states=True)
 
@@ -50,20 +50,28 @@ def main(layers=[-1], dataset_name="WN18RR", embedding_dim=256):
     entity_dict = dataset.training.entity_to_id
 
     entity_id_to_word = get_id_word_dict("WN18RR", sub_word=True)
+    if use_entity_descriptions:
+        entity_id_to_description = get_id_description_dict("WN18RR")
+
     emb_matrix = np.zeros((len(entity_dict), embedding_dim))
 
     for entity_id in tqdm(entity_dict):
         entity_emb_idx = entity_dict[entity_id]
         entity_name = entity_id_to_word[str(entity_id)]
 
-        idx_list = [get_word_idx(entity_name, word) for word in entity_name.split(" ")]
-        emb = get_word_vector(entity_name, idx_list, tokenizer, model, layers)
+        if use_entity_descriptions:
+            input_sentence = f"{entity_name} : {entity_id_to_description[str(entity_id)]}"
+        else:
+            input_sentence = entity_name
+
+        idx_list = [get_word_idx(input_sentence, word) for word in entity_name.split(" ")]
+        emb = get_word_vector(input_sentence, idx_list, tokenizer, model, layers)
 
         emb_matrix[entity_emb_idx, :] = emb 
     
     emb_matrix = torch.from_numpy(emb_matrix.astype(np.float32))
 
-    with open('word_vectors/bert-mini_no_def', 'wb') as handle:
+    with open('word_vectors/bert-mini_no_def.pickle', 'wb') as handle:
         pickle.dump(emb_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 

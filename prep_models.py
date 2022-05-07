@@ -87,3 +87,4 @@ if __name__ == "__main__":
 
     if "fasttext_300" in args.models:
         download_preproc_fasttext(emb_dim=300, vectors_dir=args.vectors_dir)
+

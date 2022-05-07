@@ -6,6 +6,21 @@ from pykeen.datasets import WN18RR, FB15k237
 import json
 
 
+def get_id_description_dict(dataset_name):
+    if dataset_name == "WN18RR":
+        id_desc_dict = {}
+
+        with open("aux_data/WN18RR/wordnet-mlj12-definitions.txt", "r") as f:
+            for line in f:
+                line_list = line.split("\t")
+                idx = line_list[0]
+                desc = line_list[-1]
+
+                id_desc_dict[idx] = desc 
+        return id_desc_dict
+    else:
+        raise ValueError
+
 def dict_entry_from_line(line, sub_word=True):
     line_list = line.split("\t")
     idx = line_list[0]
