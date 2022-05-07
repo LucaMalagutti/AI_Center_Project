@@ -14,3 +14,4 @@ explore.ipynb
 venv/
 .ipynb_checkpoints/explore-checkpoint.ipynb
 .DS_Store
+.vscode/
