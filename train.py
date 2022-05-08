@@ -88,6 +88,7 @@ def pipeline_from_config(
     embdim: int,
     epochs: int,
     vectors_dir: str,
+    random_seed: int,
 ):
     """Initialize pipeline parameters from config file."""
 
@@ -108,6 +109,9 @@ def pipeline_from_config(
         init, embedding_dim, dataset_name, vectors_dir
     )
 
+    if random_seed is not None:
+        config["pipeline"]["random_seed"] = random_seed
+
     config["pipeline"]["model_kwargs"]["entity_initializer"] = entity_initializer
     config["pipeline"]["model_kwargs"]["embedding_dim"] = embedding_dim
     config["pipeline"]["training_kwargs"]["num_epochs"] = num_epochs
@@ -121,8 +125,7 @@ def pipeline_from_config(
         ),
         result_tracker="wandb",
         result_tracker_kwargs=dict(
-            project='W2V_for_KGs',
-            entity = 'eth_ai_center_kg_project'
+            project="W2V_for_KGs", entity="eth_ai_center_kg_project"
         ),
         **pipeline_kwargs,
     )
@@ -174,8 +177,21 @@ if __name__ == "__main__":
         nargs="?",
         help="Directory where vectors are stored",
     )
+    parser.add_argument(
+        "--random_seed",
+        type=int,
+        default=None,
+        nargs="?",
+        help="Random seed for the pipeline",
+    )
 
     args = parser.parse_args()
     pipeline_from_config(
-        args.dataset, args.model, args.init, args.embdim, args.epochs, args.vectors_dir
+        args.dataset,
+        args.model,
+        args.init,
+        args.embdim,
+        args.epochs,
+        args.vectors_dir,
+        args.random_seed,
     )
