@@ -71,7 +71,7 @@ def get_entity_initializer(
             )
         )
     elif init == "bert":
-        with open("{vectors_dir}/bert-mini_no_def.pickle", "rb") as f:
+        with open(f"{vectors_dir}/bert-mini_no_def.pickle", "rb") as f:
             bert_emb_matrix = pickle.load(f)
         print(bert_emb_matrix.shape)  # prints torch.Size([40559, 256])
 
@@ -89,7 +89,7 @@ def pipeline_from_config(
     epochs: int,
     vectors_dir: str,
     random_seed: int,
-    wandb_group: str
+    wandb_group: str,
 ):
     """Initialize pipeline parameters from config file."""
 
@@ -126,8 +126,7 @@ def pipeline_from_config(
         ),
         result_tracker="wandb",
         result_tracker_kwargs=dict(
-            project="W2V_for_KGs", entity="eth_ai_center_kg_project",
-            group=wandb_group
+            project="W2V_for_KGs", entity="eth_ai_center_kg_project", group=wandb_group
         ),
         **pipeline_kwargs,
     )
@@ -203,5 +202,5 @@ if __name__ == "__main__":
         args.epochs,
         args.vectors_dir,
         args.random_seed,
-        args.wandb_group
+        args.wandb_group,
     )
