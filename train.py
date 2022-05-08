@@ -40,7 +40,7 @@ def load_configuration(
 
 
 def get_entity_initializer(
-    init: str, embedding_dim, dataset_name, vectors_dir="word_vectors"
+    init: str, embedding_dim, dataset_name, vectors_dir="word_vectors", bert_layer=-1,
 ):
     """Get an Entity embeddings initializer."""
 
@@ -73,7 +73,7 @@ def get_entity_initializer(
         )
     elif init == "bert":
         bert_emb_matrix = get_bert_embeddings(
-            layers=[-1],
+            layers=[bert_layer],
             dataset_name=dataset_name,
             bert_model="prajjwal1/bert-mini",
             use_entity_descriptions=False,
@@ -93,7 +93,8 @@ def pipeline_from_config(
     epochs: int,
     vectors_dir: str,
     random_seed: int,
-    wandb_group: str
+    wandb_group: str,
+    bert_layer: int,
 ):
     """Initialize pipeline parameters from config file."""
 
@@ -111,7 +112,7 @@ def pipeline_from_config(
         num_epochs = epochs
 
     entity_initializer = get_entity_initializer(
-        init, embedding_dim, dataset_name, vectors_dir
+        init, embedding_dim, dataset_name, vectors_dir, bert_layer,
     )
 
     if random_seed is not None:
@@ -197,6 +198,13 @@ if __name__ == "__main__":
         nargs="?",
         help="Group name for wandb runs",
     )
+    parser.add_argument(
+        "--bert_layer",
+        type=int,
+        default=-1,
+        nargs="?",
+        help="BERT layer to take embeddings from",
+    )
 
     args = parser.parse_args()
     pipeline_from_config(
@@ -207,5 +215,6 @@ if __name__ == "__main__":
         args.epochs,
         args.vectors_dir,
         args.random_seed,
-        args.wandb_group
+        args.wandb_group,
+        args.bert_layer
     )
