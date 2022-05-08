@@ -1,5 +1,6 @@
 from pykeen.pipeline import pipeline
 from pykeen.nn.init import PretrainedInitializer
+from bert_embs import get_bert_embeddings
 import w2v
 import json
 import argparse
@@ -71,9 +72,12 @@ def get_entity_initializer(
             )
         )
     elif init == "bert":
-        with open("{vectors_dir}/bert-mini_no_def.pickle", "rb") as f:
-            bert_emb_matrix = pickle.load(f)
-        print(bert_emb_matrix.shape)  # prints torch.Size([40559, 256])
+        bert_emb_matrix = get_bert_embeddings(
+            layers=[-1],
+            dataset_name=dataset_name,
+            bert_model="prajjwal1/bert-mini",
+            use_entity_descriptions=False,
+        )
 
         entity_initializer = PretrainedInitializer(bert_emb_matrix)
     else:

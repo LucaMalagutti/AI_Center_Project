@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel, PretrainedConfig
 from w2v import get_id_word_dict, get_id_description_dict
 import pickle
 from tqdm import tqdm
@@ -38,20 +38,24 @@ def get_word_vector(sent, idx_list, tokenizer, model, layers):
     return get_hidden_states(encoded, token_ids_words, model, layers)
 
 
-def main(layers=[-1], dataset_name="WN18RR", embedding_dim=256, use_entity_descriptions=False):
-    tokenizer = AutoTokenizer.from_pretrained("prajjwal1/bert-mini")
-    model = AutoModel.from_pretrained("prajjwal1/bert-mini", output_hidden_states=True)
+def get_bert_embeddings(layers=[-1], dataset_name="WN18RR", bert_model="prajjwal1/bert-mini", use_entity_descriptions=False):
+    dataset_name = dataset_name.lower()
+    tokenizer = AutoTokenizer.from_pretrained(bert_model)
+    model = AutoModel.from_pretrained(bert_model, output_hidden_states=True)
 
-    if dataset_name == "WN18RR":
+    model_config = PretrainedConfig.from_pretrained(bert_model)
+    embedding_dim = model_config.hidden_size
+
+    if dataset_name == "wn18rr":
         dataset = WN18RR()
     else:
         raise NotImplementedError("Dataset not implemented")
 
     entity_dict = dataset.training.entity_to_id
 
-    entity_id_to_word = get_id_word_dict("WN18RR", sub_word=True)
+    entity_id_to_word = get_id_word_dict(dataset_name, sub_word=True)
     if use_entity_descriptions:
-        entity_id_to_description = get_id_description_dict("WN18RR")
+        entity_id_to_description = get_id_description_dict(dataset_name)
 
     emb_matrix = np.zeros((len(entity_dict), embedding_dim))
 
@@ -71,9 +75,13 @@ def main(layers=[-1], dataset_name="WN18RR", embedding_dim=256, use_entity_descr
     
     emb_matrix = torch.from_numpy(emb_matrix.astype(np.float32))
 
-    with open('word_vectors/bert-mini_no_def.pickle', 'wb') as handle:
-        pickle.dump(emb_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    return emb_matrix
+
 
 
 if __name__ == '__main__':
-    main()
+    OUTPUT_NAME = "bert-mini_embs.pickle"
+    emb_matrix = get_bert_embeddings()
+
+    with open(f'word_vectors/{OUTPUT_NAME}', 'wb') as handle:
+        pickle.dump(emb_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
