@@ -9,7 +9,8 @@
       "stopper": "early",
       "stopper_kwargs":{
         "frequency":1,
-        "patience":10
+	"metric": "both.realistic.hits_at_10",
+        "patience":50
       },
       "model_kwargs": {
         "embedding_dim": 200,

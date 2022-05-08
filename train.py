@@ -89,6 +89,7 @@ def pipeline_from_config(
     epochs: int,
     vectors_dir: str,
     random_seed: int,
+    wandb_group: str
 ):
     """Initialize pipeline parameters from config file."""
 
@@ -125,7 +126,8 @@ def pipeline_from_config(
         ),
         result_tracker="wandb",
         result_tracker_kwargs=dict(
-            project="W2V_for_KGs", entity="eth_ai_center_kg_project"
+            project="W2V_for_KGs", entity="eth_ai_center_kg_project",
+            group=wandb_group
         ),
         **pipeline_kwargs,
     )
@@ -173,7 +175,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--vectors_dir",
         type=str,
-        default=None,
+        default="word_vectors",
         nargs="?",
         help="Directory where vectors are stored",
     )
@@ -183,6 +185,13 @@ if __name__ == "__main__":
         default=None,
         nargs="?",
         help="Random seed for the pipeline",
+    )
+    parser.add_argument(
+        "--wandb_group",
+        type=str,
+        default=None,
+        nargs="?",
+        help="Group name for wandb runs",
     )
 
     args = parser.parse_args()
@@ -194,4 +203,5 @@ if __name__ == "__main__":
         args.epochs,
         args.vectors_dir,
         args.random_seed,
+        args.wandb_group
     )
