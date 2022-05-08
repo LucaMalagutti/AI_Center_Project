@@ -6,3 +6,5 @@ fasttext
 wget
 wandb
 transformers
+nltk
+pylcs

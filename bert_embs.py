@@ -5,13 +5,43 @@ from w2v import get_id_word_dict, get_id_description_dict
 import pickle
 from tqdm import tqdm
 from pykeen.datasets import WN18RR
+from nltk import PorterStemmer
+import pylcs
+
+
+def get_stemmer_mean_weights(stemmer, tokenizer, word):
+    stemmed = stemmer.stem(word)
+    encoded_ids = tokenizer.encode_plus(word).input_ids
+    num_tokens = len(encoded_ids) - 2
+
+    weights = [1.0]
+
+    if num_tokens > 1 and word is not None:
+        decoded_tokens = [tokenizer.decode(encoded_ids[i]).replace("##", "") for i in range(1, len(encoded_ids)-1)]
+
+        main_token_idx = -1
+        max_lcs = -1
+        for idx, token in enumerate(decoded_tokens):
+            lcs = pylcs.lcs(stemmed, token)
+            if lcs > max_lcs:
+                max_lcs = lcs
+                main_token_idx = idx
+    
+        if main_token_idx > -1:
+            main_weight = 0.67
+            small_weight = (1-main_weight)/(num_tokens-1)
+
+            weights = [small_weight for _ in range(num_tokens)]
+            weights[main_token_idx] = main_weight
+
+    return weights
 
 
 def get_word_idx(sent: str, word: str):
     return sent.split(" ").index(word)
 
 
-def get_hidden_states(encoded, token_ids_word, model, layers):
+def get_hidden_states(encoded, token_ids_word, model, tokenizer, layers, weigh_mean=False, entity_name=None):
     """Push input IDs through model. Stack and sum `layers` (last four by default).
     Select only those subword token outputs that belong to our word of interest
     and average them."""
@@ -25,20 +55,32 @@ def get_hidden_states(encoded, token_ids_word, model, layers):
     # Only select the tokens that constitute the requested word
     word_tokens_output = output[token_ids_word]
 
-    return word_tokens_output.mean(dim=0)
+    if not weigh_mean:
+        return word_tokens_output.mean(dim=0)
+    else:
+        stemmer = PorterStemmer()
+        weights = []
+        for entity in entity_name.split(" "):
+            weights.extend(get_stemmer_mean_weights(stemmer, tokenizer, entity))
+
+        if len(weights) == len(word_tokens_output):
+            return torch.Tensor(np.average(word_tokens_output, axis=0, weights=weights))
+        else:
+            return word_tokens_output.mean(dim=0)
 
 
-def get_word_vector(sent, idx_list, tokenizer, model, layers):
+
+def get_word_vector(sent, idx_list, tokenizer, model, layers, weigh_mean=False, entity_name=None):
     """Get a word vector by first tokenizing the input sentence, getting all token idxs
     that make up the word of interest, and then `get_hidden_states`."""
     encoded = tokenizer.encode_plus(sent, return_tensors="pt")
 
     token_ids_words = np.array([w_id in idx_list for w_id in encoded.word_ids()])
 
-    return get_hidden_states(encoded, token_ids_words, model, layers)
+    return get_hidden_states(encoded, token_ids_words, model, tokenizer, layers, weigh_mean, entity_name)
 
 
-def get_bert_embeddings(layers=[-1], dataset_name="WN18RR", bert_model="prajjwal1/bert-mini", use_entity_descriptions=False):
+def get_bert_embeddings(layers=[-1], dataset_name="WN18RR", bert_model="prajjwal1/bert-mini", use_entity_descriptions=False, weigh_mean=True):
     dataset_name = dataset_name.lower()
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
     model = AutoModel.from_pretrained(bert_model, output_hidden_states=True)
@@ -69,7 +111,7 @@ def get_bert_embeddings(layers=[-1], dataset_name="WN18RR", bert_model="prajjwal
             input_sentence = entity_name
 
         idx_list = [get_word_idx(input_sentence, word) for word in entity_name.split(" ")]
-        emb = get_word_vector(input_sentence, idx_list, tokenizer, model, layers)
+        emb = get_word_vector(input_sentence, idx_list, tokenizer, model, layers, weigh_mean, entity_name)
 
         emb_matrix[entity_emb_idx, :] = emb 
     

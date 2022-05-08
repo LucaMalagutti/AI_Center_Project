@@ -40,7 +40,7 @@ def load_configuration(
 
 
 def get_entity_initializer(
-    init: str, embedding_dim, dataset_name, vectors_dir="word_vectors", bert_layer=-1,
+    init: str, embedding_dim, dataset_name, vectors_dir="word_vectors", bert_layer=-1, bert_weigh=False,
 ):
     """Get an Entity embeddings initializer."""
 
@@ -77,6 +77,7 @@ def get_entity_initializer(
             dataset_name=dataset_name,
             bert_model="prajjwal1/bert-mini",
             use_entity_descriptions=False,
+            weigh_mean=bert_weigh,
         )
 
         entity_initializer = PretrainedInitializer(bert_emb_matrix)
@@ -95,6 +96,7 @@ def pipeline_from_config(
     random_seed: int,
     wandb_group: str,
     bert_layer: int,
+    bert_stem: bool,
 ):
     """Initialize pipeline parameters from config file."""
 
@@ -112,7 +114,7 @@ def pipeline_from_config(
         num_epochs = epochs
 
     entity_initializer = get_entity_initializer(
-        init, embedding_dim, dataset_name, vectors_dir, bert_layer,
+        init, embedding_dim, dataset_name, vectors_dir, bert_layer, bert_stem,
     )
 
     if random_seed is not None:
@@ -205,6 +207,11 @@ if __name__ == "__main__":
         nargs="?",
         help="BERT layer to take embeddings from",
     )
+    parser.add_argument(
+        "--bert_stem_weighted",
+        action="store_true",
+        help="weight BERT tokens using stemming",
+    )
 
     args = parser.parse_args()
     pipeline_from_config(
@@ -216,5 +223,6 @@ if __name__ == "__main__":
         args.vectors_dir,
         args.random_seed,
         args.wandb_group,
-        args.bert_layer
+        args.bert_layer,
+        args.bert_stem_weighted,
     )
