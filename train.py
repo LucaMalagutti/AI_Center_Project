@@ -106,6 +106,11 @@ def pipeline_from_config(
     else:
         num_epochs = epochs
 
+    if init == "bert":
+        config["pipeline"]["model_kwargs"]["dropout_0"] = 0.12
+        config["pipeline"]["model_kwargs"]["dropout_1"] = 0.61
+        config["pipeline"]["model_kwargs"]["dropout_2"] = 0.42
+
     entity_initializer = get_entity_initializer(
         init, embedding_dim, dataset_name, vectors_dir
     )
