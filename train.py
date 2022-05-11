@@ -90,6 +90,9 @@ def pipeline_from_config(
     vectors_dir: str,
     random_seed: int,
     wandb_group: str,
+    dropout_0: float,
+    dropout_1: float,
+    dropout_2: float,
 ):
     """Initialize pipeline parameters from config file."""
 
@@ -106,10 +109,14 @@ def pipeline_from_config(
     else:
         num_epochs = epochs
 
-    if init == "bert":
-        config["pipeline"]["model_kwargs"]["dropout_0"] = 0.12
-        config["pipeline"]["model_kwargs"]["dropout_1"] = 0.61
-        config["pipeline"]["model_kwargs"]["dropout_2"] = 0.42
+    if dropout_0:
+        config["pipeline"]["model_kwargs"]["dropout_0"] = dropout_0
+
+    if dropout_1:
+        config["pipeline"]["model_kwargs"]["dropout_1"] = dropout_1
+
+    if dropout_2:
+        config["pipeline"]["model_kwargs"]["dropout_2"] = dropout_2
 
     entity_initializer = get_entity_initializer(
         init, embedding_dim, dataset_name, vectors_dir
@@ -197,6 +204,27 @@ if __name__ == "__main__":
         nargs="?",
         help="Group name for wandb runs",
     )
+    parser.add_argument(
+        "--dropout_0",
+        type=float,
+        default=None,
+        nargs="?",
+        help="Dropout rate on TuckER core tensor",
+    )
+    parser.add_argument(
+        "--dropout_1",
+        type=float,
+        default=None,
+        nargs="?",
+        help="Dropout rate on ...",
+    )
+    parser.add_argument(
+        "--dropout_2",
+        type=float,
+        default=None,
+        nargs="?",
+        help="Dropout rate on ...",
+    )
 
     args = parser.parse_args()
     pipeline_from_config(
@@ -208,4 +236,7 @@ if __name__ == "__main__":
         args.vectors_dir,
         args.random_seed,
         args.wandb_group,
+        args.dropout_0,
+        args.dropout_1,
+        args.dropout_2,
     )
