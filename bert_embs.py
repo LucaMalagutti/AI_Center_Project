@@ -90,7 +90,7 @@ def get_word_vector(sent, idx_list, tokenizer, model, layers, weigh_mean=False, 
     return get_hidden_states(encoded, token_ids_words, model, tokenizer, layers, weigh_mean, entity_name)
 
 
-def get_bert_embeddings(layers=[-1], dataset_name="WN18RR", bert_model="prajjwal1/bert-mini", use_entity_descriptions=False, weigh_mean=True):
+def get_bert_embeddings(layers=[-1], dataset_name="WN18RR", bert_model="prajjwal1/bert-mini", use_entity_descriptions=False, weigh_mean=False):
     dataset_name = dataset_name.lower()
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
     model = AutoModel.from_pretrained(bert_model, output_hidden_states=True)
