@@ -19,26 +19,35 @@ def get_stemmer_mean_weights(stemmer, tokenizer, word):
     if num_tokens > 1 and word is not None:
         decoded_tokens = [tokenizer.decode(encoded_ids[i]).replace("##", "") for i in range(1, len(encoded_ids)-1)]
 
-        main_token_idx = -1
+        begin = 0
+        end = 1
         max_lcs = -1
-        for idx, token in enumerate(decoded_tokens):
-            lcs = pylcs.lcs(stemmed, token)
+
+        best_end = -1
+        best_begin = -1
+
+        while begin < len(decoded_tokens):
+            lcs = pylcs.lcs(stemmed, "".join(decoded_tokens[begin:end]))
             if lcs > max_lcs:
                 max_lcs = lcs
-                main_token_idx = idx
+                best_end = end
+                best_begin = begin
+            
+                if end < len(decoded_tokens):
+                    end += 1
+                else:
+                    begin += 1 
+
+            else:
+                begin += 1
+                if end < len(decoded_tokens) and begin + 1 >= end:
+                    end += 1
+
+        weights = [1/(best_end-best_begin) for _ in range(num_tokens)]
+        for i in range(best_begin, best_end):
+            weights[i] = 1
     
-        if main_token_idx > -1:
-            main_weight = 0.67
-            small_weight = (1-main_weight)/(num_tokens-1)
-
-            weights = [small_weight for _ in range(num_tokens)]
-            weights[main_token_idx] = main_weight
-
     return weights
-
-
-def get_word_idx(sent: str, word: str):
-    return sent.split(" ").index(word)
 
 
 def get_hidden_states(encoded, token_ids_word, model, tokenizer, layers, weigh_mean=False, entity_name=None):
@@ -55,19 +64,20 @@ def get_hidden_states(encoded, token_ids_word, model, tokenizer, layers, weigh_m
     # Only select the tokens that constitute the requested word
     word_tokens_output = output[token_ids_word]
 
-    if not weigh_mean:
-        return word_tokens_output.mean(dim=0)
-    else:
+    if weigh_mean:
         stemmer = PorterStemmer()
         weights = []
-        for entity in entity_name.split(" "):
-            weights.extend(get_stemmer_mean_weights(stemmer, tokenizer, entity))
+        for word in entity_name.split(" "):
+            weights.extend(get_stemmer_mean_weights(stemmer, tokenizer, word))
 
         if len(weights) == len(word_tokens_output):
             return torch.Tensor(np.average(word_tokens_output, axis=0, weights=weights))
-        else:
-            return word_tokens_output.mean(dim=0)
 
+    return word_tokens_output.mean(dim=0)
+
+
+def get_word_idx(sent: str, word: str):
+    return sent.split(" ").index(word)
 
 
 def get_word_vector(sent, idx_list, tokenizer, model, layers, weigh_mean=False, entity_name=None):
