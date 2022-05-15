@@ -1,5 +1,6 @@
 from pykeen.pipeline import pipeline
 from pykeen.nn.init import PretrainedInitializer
+from bert_embs import get_bert_embeddings
 import w2v
 import json
 import argparse
@@ -39,7 +40,7 @@ def load_configuration(
 
 
 def get_entity_initializer(
-    init: str, embedding_dim, dataset_name, vectors_dir="word_vectors"
+    init: str, embedding_dim, dataset_name, vectors_dir="word_vectors", bert_layer=-1, bert_weigh=False, bert_desc=False
 ):
     """Get an Entity embeddings initializer."""
 
@@ -71,9 +72,13 @@ def get_entity_initializer(
             )
         )
     elif init == "bert":
-        with open(f"{vectors_dir}/bert-mini_no_def.pickle", "rb") as f:
-            bert_emb_matrix = pickle.load(f)
-        print(bert_emb_matrix.shape)  # prints torch.Size([40559, 256])
+        bert_emb_matrix = get_bert_embeddings(
+            layers=[bert_layer],
+            dataset_name=dataset_name,
+            bert_model="prajjwal1/bert-mini",
+            use_entity_descriptions=bert_desc,
+            weigh_mean=bert_weigh,
+        )
 
         entity_initializer = PretrainedInitializer(bert_emb_matrix)
     else:
@@ -90,6 +95,9 @@ def pipeline_from_config(
     vectors_dir: str,
     random_seed: int,
     wandb_group: str,
+    bert_layer: int,
+    bert_stem: bool,
+    bert_desc: bool,
     dropout_0: float,
     dropout_1: float,
     dropout_2: float,
@@ -119,7 +127,7 @@ def pipeline_from_config(
         config["pipeline"]["model_kwargs"]["dropout_2"] = dropout_2
 
     entity_initializer = get_entity_initializer(
-        init, embedding_dim, dataset_name, vectors_dir
+        init, embedding_dim, dataset_name, vectors_dir, bert_layer, bert_stem, bert_desc
     )
 
     if random_seed is not None:
@@ -205,6 +213,23 @@ if __name__ == "__main__":
         help="Group name for wandb runs",
     )
     parser.add_argument(
+        "--bert_layer",
+        type=int,
+        default=-1,
+        nargs="?",
+        help="BERT layer to take embeddings from",
+    )
+    parser.add_argument(
+        "--bert_stem_weighted",
+        action="store_true",
+        help="weight BERT tokens using stemming",
+    )
+    parser.add_argument(
+        "--bert_desc",
+        action="store_true",
+        help="use entity descriptions to init BERT embs",
+    )
+    parser.add_argument(
         "--dropout_0",
         type=float,
         default=None,
@@ -227,6 +252,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
     pipeline_from_config(
         args.dataset,
         args.model,
@@ -236,6 +262,9 @@ if __name__ == "__main__":
         args.vectors_dir,
         args.random_seed,
         args.wandb_group,
+        args.bert_layer,
+        args.bert_stem_weighted,
+        args.bert_desc,
         args.dropout_0,
         args.dropout_1,
         args.dropout_2,
