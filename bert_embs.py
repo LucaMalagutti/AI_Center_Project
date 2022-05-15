@@ -106,15 +106,17 @@ def get_bert_embeddings(layers=[-1], dataset_name="WN18RR", bert_model="prajjwal
         entity_name = entity_id_to_word[str(entity_id)]
 
         if use_entity_descriptions:
-            input_sentence = f"{entity_name} : {entity_id_to_description[str(entity_id)]}"
+            input_sentence = (
+                f"{entity_name} : {entity_id_to_description[str(entity_id)]}"
+            )
         else:
             input_sentence = entity_name
 
         idx_list = [get_word_idx(input_sentence, word) for word in entity_name.split(" ")]
         emb = get_word_vector(input_sentence, idx_list, tokenizer, model, layers, weigh_mean, entity_name)
 
-        emb_matrix[entity_emb_idx, :] = emb 
-    
+        emb_matrix[entity_emb_idx, :] = emb
+
     emb_matrix = torch.from_numpy(emb_matrix.astype(np.float32))
 
     return emb_matrix

@@ -97,6 +97,9 @@ def pipeline_from_config(
     wandb_group: str,
     bert_layer: int,
     bert_stem: bool,
+    dropout_0: float,
+    dropout_1: float,
+    dropout_2: float,
 ):
     """Initialize pipeline parameters from config file."""
 
@@ -112,6 +115,15 @@ def pipeline_from_config(
         num_epochs = config["pipeline"]["training_kwargs"]["num_epochs"]
     else:
         num_epochs = epochs
+
+    if dropout_0:
+        config["pipeline"]["model_kwargs"]["dropout_0"] = dropout_0
+
+    if dropout_1:
+        config["pipeline"]["model_kwargs"]["dropout_1"] = dropout_1
+
+    if dropout_2:
+        config["pipeline"]["model_kwargs"]["dropout_2"] = dropout_2
 
     entity_initializer = get_entity_initializer(
         init, embedding_dim, dataset_name, vectors_dir, bert_layer, bert_stem,
@@ -133,8 +145,7 @@ def pipeline_from_config(
         ),
         result_tracker="wandb",
         result_tracker_kwargs=dict(
-            project="W2V_for_KGs", entity="eth_ai_center_kg_project",
-            group=wandb_group
+            project="W2V_for_KGs", entity="eth_ai_center_kg_project", group=wandb_group
         ),
         **pipeline_kwargs,
     )
@@ -212,6 +223,27 @@ if __name__ == "__main__":
         action="store_true",
         help="weight BERT tokens using stemming",
     )
+    parser.add_argument(
+        "--dropout_0",
+        type=float,
+        default=None,
+        nargs="?",
+        help="Dropout rate on TuckER core tensor",
+    )
+    parser.add_argument(
+        "--dropout_1",
+        type=float,
+        default=None,
+        nargs="?",
+        help="Dropout rate on ...",
+    )
+    parser.add_argument(
+        "--dropout_2",
+        type=float,
+        default=None,
+        nargs="?",
+        help="Dropout rate on ...",
+    )
 
     args = parser.parse_args()
     pipeline_from_config(
@@ -225,4 +257,7 @@ if __name__ == "__main__":
         args.wandb_group,
         args.bert_layer,
         args.bert_stem_weighted,
+        args.dropout_0,
+        args.dropout_1,
+        args.dropout_2,
     )
