@@ -144,10 +144,10 @@ def pipeline_from_config(
         metadata=dict(
             title=run_name,
         ),
-        #result_tracker="wandb",
-        #result_tracker_kwargs=dict(
-        #    project="W2V_for_KGs", entity="eth_ai_center_kg_project", group=wandb_group
-        #),
+        result_tracker="wandb",
+        result_tracker_kwargs=dict(
+            project="W2V_for_KGs", entity="eth_ai_center_kg_project", group=wandb_group
+        ),
         **pipeline_kwargs,
     )
 
