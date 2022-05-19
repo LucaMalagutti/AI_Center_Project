@@ -40,7 +40,7 @@ def load_configuration(
 
 
 def get_entity_initializer(
-    init: str, embedding_dim, dataset_name, vectors_dir="word_vectors", bert_layer=-1, bert_weigh=False, bert_desc=False
+    init: str, embedding_dim, dataset_name, config, vectors_dir="word_vectors", bert_layer=-1, bert_weigh=False, bert_desc=False
 ):
     """Get an Entity embeddings initializer."""
 
@@ -82,7 +82,7 @@ def get_entity_initializer(
 
         entity_initializer = PretrainedInitializer(bert_emb_matrix)
     else:
-        entity_initializer = "xavier_normal"
+        entity_initializer = config["pipeline"]["model_kwargs"]["entity_initializer"]
     return entity_initializer
 
 
@@ -127,7 +127,7 @@ def pipeline_from_config(
         config["pipeline"]["model_kwargs"]["dropout_2"] = dropout_2
 
     entity_initializer = get_entity_initializer(
-        init, embedding_dim, dataset_name, vectors_dir, bert_layer, bert_stem, bert_desc
+        init, embedding_dim, dataset_name, config, vectors_dir, bert_layer, bert_stem, bert_desc
     )
 
     if random_seed is not None:
@@ -144,10 +144,10 @@ def pipeline_from_config(
         metadata=dict(
             title=run_name,
         ),
-        result_tracker="wandb",
-        result_tracker_kwargs=dict(
-            project="W2V_for_KGs", entity="eth_ai_center_kg_project", group=wandb_group
-        ),
+        #result_tracker="wandb",
+        #result_tracker_kwargs=dict(
+        #    project="W2V_for_KGs", entity="eth_ai_center_kg_project", group=wandb_group
+        #),
         **pipeline_kwargs,
     )
 
