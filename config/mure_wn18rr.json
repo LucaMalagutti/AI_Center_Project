@@ -1,6 +1,7 @@
 {
     "pipeline": {
     "dataset": "wn18rr",
+    "random_seed" : 40,
     "model": "MuRE",
     "model_kwargs": {
       "embedding_dim": 200,

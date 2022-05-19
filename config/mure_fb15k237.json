@@ -1,6 +1,7 @@
 {
     "pipeline": {
     "dataset": "fb15k237",
+    "random_seed" : 40,
     "model": "MuRE",
     "model_kwargs": {
       "embedding_dim": 200,
