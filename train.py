@@ -1,6 +1,6 @@
 from pykeen.pipeline import pipeline
 from pykeen.nn.init import PretrainedInitializer
-from bert_embs import get_bert_embeddings
+from bert_embs import get_bert_embeddings, get_bert_embeddings_relation
 import w2v
 import json
 import argparse
@@ -8,6 +8,7 @@ import pathlib
 import pickle
 import torch
 import yaml
+import pdb
 from typing import (
     Any,
     Mapping,
@@ -37,6 +38,37 @@ def load_configuration(
     raise ValueError(
         f"Unknown configuration file format: {path.suffix}. Valid formats: json, yaml"
     )
+
+
+
+def get_relation_initializer(
+     init: str, embedding_dim, dataset_name, vectors_dir="word_vectors", bert_layer=-1):
+    """Get the Relation embeddings initializer."""
+    
+    if init == "glove":
+        emb_matrix =  w2v.get_emb_matrix_relation(
+                f"{vectors_dir}/glove-wiki-gigaword-{embedding_dim}.bin",
+                embedding_dim,
+                sub_word=False,
+                dataset_name=dataset_name,
+            )
+        relation_initializer = PretrainedInitializer(
+          emb_matrix.repeat(2,1) # not sure here
+        )
+        
+    elif init == "bert":
+        emb_matrix = get_bert_embeddings_relation(
+            layers=[bert_layer],
+            dataset_name=dataset_name,
+            bert_model="prajjwal1/bert-mini"
+        )
+        relation_initializer = PretrainedInitializer(
+          emb_matrix.repeat(2,1) # not sure here
+        )
+    else:
+        relation_initializer = "xavier_normal"
+    return relation_initializer
+
 
 
 def get_entity_initializer(
@@ -101,6 +133,7 @@ def pipeline_from_config(
     dropout_0: float,
     dropout_1: float,
     dropout_2: float,
+    relation_init: str
 ):
     """Initialize pipeline parameters from config file."""
 
@@ -126,14 +159,17 @@ def pipeline_from_config(
     if dropout_2:
         config["pipeline"]["model_kwargs"]["dropout_2"] = dropout_2
 
+    relation_initializer = get_relation_initializer(
+        relation_init, embedding_dim, dataset_name, vectors_dir, bert_layer)
     entity_initializer = get_entity_initializer(
-        init, embedding_dim, dataset_name, vectors_dir, bert_layer, bert_stem, bert_desc
-    )
+        init, embedding_dim, dataset_name, vectors_dir, bert_layer)
 
     if random_seed is not None:
         config["pipeline"]["random_seed"] = random_seed
 
     config["pipeline"]["model_kwargs"]["entity_initializer"] = entity_initializer
+    config["pipeline"]["model_kwargs"]["relation_initializer"] = relation_initializer
+    config["pipeline"]["model_kwargs"]["relation_dim"] = embedding_dim
     config["pipeline"]["model_kwargs"]["embedding_dim"] = embedding_dim
     config["pipeline"]["training_kwargs"]["num_epochs"] = num_epochs
 
@@ -176,6 +212,13 @@ if __name__ == "__main__":
         default="baseline",
         nargs="?",
         help="How to initialise embeddings: baseline, w2v, fasttext, glove, bert",
+    )
+    parser.add_argument(
+        "--relation_init",
+        type=str,
+        default="baseline",
+        nargs="?",
+        help="How to initialise relation embeddings: baseline, glove, bert",
     )
     parser.add_argument(
         "--embdim",
@@ -268,4 +311,5 @@ if __name__ == "__main__":
         args.dropout_0,
         args.dropout_1,
         args.dropout_2,
+        args.relation_init
     )
