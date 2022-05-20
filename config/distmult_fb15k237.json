@@ -3,6 +3,12 @@
         "dataset": "fb15k237",
         "random_seed" : 40,
         "model": "DistMult",
+        "stopper": "early",
+        "stopper_kwargs":{
+            "frequency":1,
+	        "metric": "both.realistic.hits_at_10",
+            "patience":100
+        },
         "model_kwargs": {
           "embedding_dim": 200,
           "entity_initializer": "xavier_uniform",
