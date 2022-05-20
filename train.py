@@ -5,6 +5,7 @@ import w2v
 import json
 import argparse
 import pathlib
+from typing import Union, List
 import pickle
 import torch
 import yaml
@@ -95,7 +96,7 @@ def pipeline_from_config(
     vectors_dir: str,
     random_seed: int,
     wandb_group: str,
-    bert_layer: int,
+    bert_layer: Union[int, List[int]],
     bert_stem: bool,
     bert_desc: bool,
     dropout_0: float,

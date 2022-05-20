@@ -4,7 +4,7 @@ from transformers import AutoTokenizer, AutoModel, PretrainedConfig
 from w2v import get_id_word_dict, get_id_description_dict
 import pickle
 from tqdm import tqdm
-from pykeen.datasets import WN18RR
+from pykeen.datasets import WN18RR, FB15k237
 from nltk import PorterStemmer
 import pylcs
 
@@ -100,6 +100,8 @@ def get_bert_embeddings(layers=[-1], dataset_name="WN18RR", bert_model="prajjwal
 
     if dataset_name == "wn18rr":
         dataset = WN18RR()
+    elif dataset_name == "fb15k237":
+        dataset = FB15k237()
     else:
         raise NotImplementedError("Dataset not implemented")
 
@@ -107,7 +109,10 @@ def get_bert_embeddings(layers=[-1], dataset_name="WN18RR", bert_model="prajjwal
 
     entity_id_to_word = get_id_word_dict(dataset_name, sub_word=True)
     if use_entity_descriptions:
-        entity_id_to_description = get_id_description_dict(dataset_name)
+        if dataset_name == "wn18rr":
+            entity_id_to_description = get_id_description_dict(dataset_name)
+        else:
+            raise ValueError("No descriptions available for FB15k237 dataset")
 
     emb_matrix = np.zeros((len(entity_dict), embedding_dim))
 
