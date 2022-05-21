@@ -41,7 +41,7 @@ def load_configuration(
 
 
 def get_entity_initializer(
-    init: str, embedding_dim, dataset_name, config, vectors_dir="word_vectors", bert_layer=-1, bert_weigh=False, bert_desc=False
+    init: str, embedding_dim, dataset_name, config, vectors_dir="word_vectors", bert_layer=-1, bert_weigh=False, bert_desc=False, bert_layer_weights=None
 ):
     """Get an Entity embeddings initializer."""
 
@@ -73,8 +73,17 @@ def get_entity_initializer(
             )
         )
     elif init == "bert":
+        if bert_layer is not None:
+            bert_layer = [int(x) for x in bert_layer]
+        if bert_layer_weights is not None:
+            bert_layer_weights = [float(x) for x in bert_layer_weights]
+
+            assert(len(bert_layer) > 1)
+            assert(len(bert_layer) == len(bert_layer_weights))
+
         bert_emb_matrix = get_bert_embeddings(
-            layers=[bert_layer],
+            layers=bert_layer,
+            layer_weights=bert_layer_weights,
             dataset_name=dataset_name,
             bert_model="prajjwal1/bert-mini",
             use_entity_descriptions=bert_desc,
@@ -96,7 +105,8 @@ def pipeline_from_config(
     vectors_dir: str,
     random_seed: int,
     wandb_group: str,
-    bert_layer: Union[int, List[int]],
+    bert_layer: List[int],
+    bert_layer_weights: List[float],
     bert_stem: bool,
     bert_desc: bool,
     dropout_0: float,
@@ -128,7 +138,7 @@ def pipeline_from_config(
         config["pipeline"]["model_kwargs"]["dropout_2"] = dropout_2
 
     entity_initializer = get_entity_initializer(
-        init, embedding_dim, dataset_name, config, vectors_dir, bert_layer, bert_stem, bert_desc
+        init, embedding_dim, dataset_name, config, vectors_dir, bert_layer, bert_stem, bert_desc, bert_layer_weights,
     )
 
     if random_seed is not None:
@@ -169,7 +179,7 @@ if __name__ == "__main__":
         type=str,
         default="tucker",
         nargs="?",
-        help="Whihc model to train: tucker",
+        help="Which model to train: tucker",
     )
     parser.add_argument(
         "--init",
@@ -215,10 +225,15 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--bert_layer",
-        type=int,
-        default=-1,
-        nargs="?",
+        default=None,
+        nargs="+",
         help="BERT layer to take embeddings from",
+    )
+    parser.add_argument(
+        "--bert_layer_weights",
+        default=None,
+        nargs="+",
+        help="weights for every bert_layer to computer weighted average",
     )
     parser.add_argument(
         "--bert_stem_weighted",
@@ -264,6 +279,7 @@ if __name__ == "__main__":
         args.random_seed,
         args.wandb_group,
         args.bert_layer,
+        args.bert_layer_weights,
         args.bert_stem_weighted,
         args.bert_desc,
         args.dropout_0,
