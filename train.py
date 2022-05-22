@@ -73,14 +73,6 @@ def get_entity_initializer(
             )
         )
     elif init == "bert":
-        if bert_layer is not None:
-            bert_layer = [int(x) for x in bert_layer]
-        if bert_layer_weights is not None:
-            bert_layer_weights = [float(x) for x in bert_layer_weights]
-
-            assert(len(bert_layer) > 1)
-            assert(len(bert_layer) == len(bert_layer_weights))
-
         bert_emb_matrix = get_bert_embeddings(
             layers=bert_layer,
             layer_weights=bert_layer_weights,
@@ -230,10 +222,25 @@ if __name__ == "__main__":
         help="BERT layer to take embeddings from",
     )
     parser.add_argument(
-        "--bert_layer_weights",
+        "--bert_layer_weight_1",
         default=None,
-        nargs="+",
-        help="weights for every bert_layer to computer weighted average",
+        type=float,
+        nargs="?",
+        help="weights for first bert_layer to computer weighted average",
+    )
+    parser.add_argument(
+        "--bert_layer_weight_2",
+        default=None,
+        type=float,
+        nargs="?",
+        help="weights for second bert_layer to computer weighted average",
+    )
+    parser.add_argument(
+        "--bert_layer_weight_3",
+        default=None,
+        type=float,
+        nargs="?",
+        help="weights for third bert_layer to computer weighted average",
     )
     parser.add_argument(
         "--bert_stem_weighted",
@@ -268,6 +275,27 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    bert_layer_weights = []
+    if args.bert_layer_weight_1 is not None:
+        bert_layer_weights.append(args.bert_layer_weight_1)
+    if args.bert_layer_weight_2 is not None:
+        bert_layer_weights.append(args.bert_layer_weight_2)
+    if args.bert_layer_weight_3 is not None:
+        bert_layer_weights.append(args.bert_layer_weight_3)
+    
+    if args.bert_layer is not None:
+        args.bert_layer = [int(x) for x in args.bert_layer]
+    if bert_layer_weights is not None:
+        bert_layer_weights = [float(x) for x in bert_layer_weights]
+
+        assert(len(args.bert_layer) > 1)
+        assert(len(args.bert_layer) == len(bert_layer_weights))
+
+        args.bert_layer_weights = bert_layer_weights
+    else:
+        args.bert_layer_weights = None
+    
 
     pipeline_from_config(
         args.dataset,
