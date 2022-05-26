@@ -286,7 +286,7 @@ if __name__ == "__main__":
     
     if args.bert_layer is not None:
         args.bert_layer = [int(x) for x in args.bert_layer]
-    if bert_layer_weights is not None:
+    if len(bert_layer_weights) > 0:
         bert_layer_weights = [float(x) for x in bert_layer_weights]
 
         assert(len(args.bert_layer) > 1)
