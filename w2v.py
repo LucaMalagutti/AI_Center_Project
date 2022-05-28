@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from pykeen.datasets import WN18RR, FB15k237
 import json
-import pdb
+
 
 def get_id_description_dict(dataset_name):
     if dataset_name == "wn18rr":
@@ -72,9 +72,10 @@ def get_vector_from_word_list(word_list, word_vectors, embedding_dim):
     return vector / len(word_list)
 
 
-
 def get_emb_matrix(
-    init_embeddings_path, embedding_dim, sub_word=True, dataset_name=None):
+    init_embeddings_path, embedding_dim, sub_word=True, dataset_name=None
+):
+
     if dataset_name == "wn18rr":
         dataset = WN18RR()
     elif dataset_name == "fb15k237":
@@ -118,47 +119,4 @@ def get_emb_matrix(
                 torch.nn.init.normal_(tmp)
                 emb_matrix[entity_emb_idx, :] = tmp.numpy()
 
-    return torch.from_numpy(emb_matrix.astype(np.float32))
-
-
-def get_emb_matrix_relation(
-    init_embeddings_path, embedding_dim, sub_word=True, dataset_name=None
-):
-
-    if dataset_name == "wn18rr":
-        dataset = WN18RR()
-    else:
-        raise NotImplementedError
-
-    relation_dict = dataset.training.relation_to_id
-
-
-    if "cc" in init_embeddings_path:
-        w2v_model = load_facebook_model(init_embeddings_path).wv
-    elif "glove" in init_embeddings_path:
-        w2v_model = gensim.models.KeyedVectors.load_word2vec_format(
-            init_embeddings_path, binary=True
-        )
-    elif "word2vec" in init_embeddings_path:
-        w2v_model = gensim.models.KeyedVectors.load_word2vec_format(
-            init_embeddings_path, binary=True
-        )
-
-    emb_matrix = np.zeros((len(relation_dict), embedding_dim))
-
-    for relation in relation_dict:
-        relation_id = relation_dict[relation]
-        word_list = relation.split('_')      
-        word_list = [i for i in word_list if i]
-        if sub_word:
-            raise NotImplementedError # TODO (if only there were 48hrs in a day)
-        else:
-            try:
-                emb_matrix[relation_id, :] = get_vector_from_word_list(word_list, w2v_model, embedding_dim)
-            except:
-                tmp = torch.empty(embedding_dim)
-                torch.nn.init.normal_(tmp)
-                emb_matrix[relation_id, :] = tmp.numpy()
-                print("exception")
-       
     return torch.from_numpy(emb_matrix.astype(np.float32))
