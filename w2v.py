@@ -7,7 +7,7 @@ import json
 import pdb
 
 def get_id_description_dict(dataset_name):
-    if dataset_name == "WN18RR":
+    if dataset_name == "wn18rr":
         id_desc_dict = {}
 
         with open("aux_data/WN18RR/wordnet-mlj12-definitions.txt", "r") as f:

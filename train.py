@@ -5,6 +5,7 @@ import w2v
 import json
 import argparse
 import pathlib
+from typing import Union, List
 import pickle
 import torch
 import yaml
@@ -72,7 +73,7 @@ def get_relation_initializer(
 
 
 def get_entity_initializer(
-    init: str, embedding_dim, dataset_name, vectors_dir="word_vectors", bert_layer=-1, bert_weigh=False, bert_desc=False
+    init: str, embedding_dim, dataset_name, config, vectors_dir="word_vectors", bert_layer=-1, bert_weigh=False, bert_desc=False, bert_layer_weights=None
 ):
     """Get an Entity embeddings initializer."""
 
@@ -105,7 +106,8 @@ def get_entity_initializer(
         )
     elif init == "bert":
         bert_emb_matrix = get_bert_embeddings(
-            layers=[bert_layer],
+            layers=bert_layer,
+            layer_weights=bert_layer_weights,
             dataset_name=dataset_name,
             bert_model="prajjwal1/bert-mini",
             use_entity_descriptions=bert_desc,
@@ -114,7 +116,7 @@ def get_entity_initializer(
 
         entity_initializer = PretrainedInitializer(bert_emb_matrix)
     else:
-        entity_initializer = "xavier_normal"
+        entity_initializer = config["pipeline"]["model_kwargs"]["entity_initializer"]
     return entity_initializer
 
 
@@ -127,7 +129,8 @@ def pipeline_from_config(
     vectors_dir: str,
     random_seed: int,
     wandb_group: str,
-    bert_layer: int,
+    bert_layer: List[int],
+    bert_layer_weights: List[float],
     bert_stem: bool,
     bert_desc: bool,
     dropout_0: float,
@@ -162,7 +165,8 @@ def pipeline_from_config(
     relation_initializer = get_relation_initializer(
         relation_init, embedding_dim, dataset_name, vectors_dir, bert_layer)
     entity_initializer = get_entity_initializer(
-        init, embedding_dim, dataset_name, vectors_dir, bert_layer)
+        init, embedding_dim, dataset_name, config, vectors_dir, bert_layer, bert_stem, bert_desc, bert_layer_weights,
+    )
 
     if random_seed is not None:
         config["pipeline"]["random_seed"] = random_seed
@@ -204,7 +208,7 @@ if __name__ == "__main__":
         type=str,
         default="tucker",
         nargs="?",
-        help="Whihc model to train: tucker",
+        help="Which model to train: tucker",
     )
     parser.add_argument(
         "--init",
@@ -257,10 +261,30 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--bert_layer",
-        type=int,
-        default=-1,
-        nargs="?",
+        default=None,
+        nargs="+",
         help="BERT layer to take embeddings from",
+    )
+    parser.add_argument(
+        "--bert_layer_weight_1",
+        default=None,
+        type=float,
+        nargs="?",
+        help="weights for first bert_layer to computer weighted average",
+    )
+    parser.add_argument(
+        "--bert_layer_weight_2",
+        default=None,
+        type=float,
+        nargs="?",
+        help="weights for second bert_layer to computer weighted average",
+    )
+    parser.add_argument(
+        "--bert_layer_weight_3",
+        default=None,
+        type=float,
+        nargs="?",
+        help="weights for third bert_layer to computer weighted average",
     )
     parser.add_argument(
         "--bert_stem_weighted",
@@ -296,6 +320,27 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    bert_layer_weights = []
+    if args.bert_layer_weight_1 is not None:
+        bert_layer_weights.append(args.bert_layer_weight_1)
+    if args.bert_layer_weight_2 is not None:
+        bert_layer_weights.append(args.bert_layer_weight_2)
+    if args.bert_layer_weight_3 is not None:
+        bert_layer_weights.append(args.bert_layer_weight_3)
+    
+    if args.bert_layer is not None:
+        args.bert_layer = [int(x) for x in args.bert_layer]
+    if len(bert_layer_weights) > 0:
+        bert_layer_weights = [float(x) for x in bert_layer_weights]
+
+        assert(len(args.bert_layer) > 1)
+        assert(len(args.bert_layer) == len(bert_layer_weights))
+
+        args.bert_layer_weights = bert_layer_weights
+    else:
+        args.bert_layer_weights = None
+    
+
     pipeline_from_config(
         args.dataset,
         args.model,
@@ -306,6 +351,7 @@ if __name__ == "__main__":
         args.random_seed,
         args.wandb_group,
         args.bert_layer,
+        args.bert_layer_weights,
         args.bert_stem_weighted,
         args.bert_desc,
         args.dropout_0,
