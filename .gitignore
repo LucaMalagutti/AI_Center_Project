@@ -17,3 +17,4 @@ venv/
 .vscode/
 lsf*
 
+*.yaml

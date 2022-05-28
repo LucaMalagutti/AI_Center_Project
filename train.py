@@ -43,7 +43,7 @@ def load_configuration(
 
 
 def get_relation_initializer(
-     init: str, embedding_dim, dataset_name, vectors_dir="word_vectors", bert_layer=-1):
+     init: str, embedding_dim, dataset_name, vectors_dir="word_vectors", bert_layer=[-1]):
     """Get the Relation embeddings initializer."""
     
     if init == "glove":
@@ -59,7 +59,7 @@ def get_relation_initializer(
         
     elif init == "bert":
         emb_matrix = get_bert_embeddings_relation(
-            layers=[bert_layer],
+            layers=bert_layer,
             dataset_name=dataset_name,
             bert_model="prajjwal1/bert-mini"
         )
@@ -68,6 +68,7 @@ def get_relation_initializer(
         )
     else:
         relation_initializer = "xavier_normal"
+        print("xavier Normal init")
     return relation_initializer
 
 
@@ -173,7 +174,8 @@ def pipeline_from_config(
 
     config["pipeline"]["model_kwargs"]["entity_initializer"] = entity_initializer
     config["pipeline"]["model_kwargs"]["relation_initializer"] = relation_initializer
-    config["pipeline"]["model_kwargs"]["relation_dim"] = embedding_dim
+    if relation_init:
+        config["pipeline"]["model_kwargs"]["relation_dim"] = embedding_dim
     config["pipeline"]["model_kwargs"]["embedding_dim"] = embedding_dim
     config["pipeline"]["training_kwargs"]["num_epochs"] = num_epochs
 
@@ -220,7 +222,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--relation_init",
         type=str,
-        default="baseline",
+        default=None,
         nargs="?",
         help="How to initialise relation embeddings: baseline, glove, bert",
     )
@@ -261,7 +263,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--bert_layer",
-        default=None,
+        default=[0],
         nargs="+",
         help="BERT layer to take embeddings from",
     )
