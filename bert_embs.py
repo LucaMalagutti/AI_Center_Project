@@ -7,7 +7,7 @@ from tqdm import tqdm
 from pykeen.datasets import WN18RR, FB15k237
 from nltk import PorterStemmer
 import pylcs
-
+import pdb
 
 def get_stemmer_mean_weights(stemmer, tokenizer, word):
     stemmed = stemmer.stem(word)
@@ -146,6 +146,33 @@ def get_bert_embeddings(layers=[-1], dataset_name="wn18rr", bert_model="prajjwal
     return emb_matrix
 
 
+
+def get_bert_embeddings_relation(layers=[-1], dataset_name="WN18RR", bert_model="prajjwal1/bert-mini"):
+    dataset_name = dataset_name.lower()
+    tokenizer = AutoTokenizer.from_pretrained(bert_model)
+    model = AutoModel.from_pretrained(bert_model, output_hidden_states=True)
+
+    model_config = PretrainedConfig.from_pretrained(bert_model)
+    embedding_dim = model_config.hidden_size
+
+    if dataset_name == "wn18rr":
+        dataset = WN18RR()
+    else:
+        raise NotImplementedError("Dataset not implemented")
+
+    relation_dict = dataset.training.relation_to_id
+    
+    emb_matrix = np.zeros((len(relation_dict), embedding_dim))
+
+    for relation in tqdm(relation_dict):
+        relation_id = relation_dict[relation]
+        input_sentence = relation[1:].replace('_', ' ')
+        idx_list = [get_word_idx(input_sentence, word) for word in input_sentence.split(" ")]
+        emb = get_word_vector(input_sentence, idx_list, tokenizer, model, layers, entity_name=input_sentence)
+        emb_matrix[relation_id, :] = emb
+
+    emb_matrix = torch.from_numpy(emb_matrix.astype(np.float32))
+    return emb_matrix
 
 if __name__ == '__main__':
     OUTPUT_NAME = "bert-mini_embs.pickle"
