@@ -9,7 +9,6 @@
       "power_norm": true,
       "entity_initializer": "normal_",
       "entity_initializer_kwargs": {
-        "std": 1.0e-03
       },
       "entity_bias_initializer": "zeros_",
       "relation_initializer": "normal_",

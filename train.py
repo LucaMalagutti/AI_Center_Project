@@ -43,7 +43,7 @@ def load_configuration(
 
 
 def get_relation_initializer(
-     init: str, embedding_dim, dataset_name, vectors_dir="word_vectors", bert_layer=[-1]):
+     init: str, embedding_dim, dataset_name, config, vectors_dir="word_vectors", bert_layer=[-1]):
     """Get the Relation embeddings initializer."""
     
     if init == "glove":
@@ -67,8 +67,7 @@ def get_relation_initializer(
           emb_matrix.repeat(2,1) # not sure here
         )
     else:
-        relation_initializer = "xavier_normal"
-        print("xavier Normal init")
+        relation_initializer = config["pipeline"]["model_kwargs"]["relation_initializer"]
     return relation_initializer
 
 
@@ -114,7 +113,7 @@ def get_entity_initializer(
             use_entity_descriptions=bert_desc,
             weigh_mean=bert_weigh,
         )
-
+        
         entity_initializer = PretrainedInitializer(bert_emb_matrix)
     else:
         entity_initializer = config["pipeline"]["model_kwargs"]["entity_initializer"]
@@ -164,7 +163,7 @@ def pipeline_from_config(
         config["pipeline"]["model_kwargs"]["dropout_2"] = dropout_2
 
     relation_initializer = get_relation_initializer(
-        relation_init, embedding_dim, dataset_name, vectors_dir, bert_layer)
+        relation_init, embedding_dim, dataset_name, config, vectors_dir, bert_layer)
     entity_initializer = get_entity_initializer(
         init, embedding_dim, dataset_name, config, vectors_dir, bert_layer, bert_stem, bert_desc, bert_layer_weights,
     )
