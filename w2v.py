@@ -6,6 +6,7 @@ from pykeen.datasets import WN18RR, FB15k237
 import json
 import pdb
 
+
 def get_id_description_dict(dataset_name):
     if dataset_name == "wn18rr":
         id_desc_dict = {}
@@ -16,10 +17,11 @@ def get_id_description_dict(dataset_name):
                 idx = line_list[0]
                 desc = line_list[-1]
 
-                id_desc_dict[idx] = desc 
+                id_desc_dict[idx] = desc
         return id_desc_dict
     else:
         raise ValueError
+
 
 def dict_entry_from_line(line, sub_word=True):
     line_list = line.split("\t")
@@ -72,9 +74,9 @@ def get_vector_from_word_list(word_list, word_vectors, embedding_dim):
     return vector / len(word_list)
 
 
-
 def get_emb_matrix(
-    init_embeddings_path, embedding_dim, sub_word=True, dataset_name=None):
+    init_embeddings_path, embedding_dim, sub_word=True, dataset_name=None
+):
     if dataset_name == "wn18rr":
         dataset = WN18RR()
     elif dataset_name == "fb15k237":
@@ -134,7 +136,6 @@ def get_emb_matrix_relation(
 
     relation_dict = dataset.training.relation_to_id
 
-
     if "cc" in init_embeddings_path:
         w2v_model = load_facebook_model(init_embeddings_path).wv
     elif "glove" in init_embeddings_path:
@@ -148,16 +149,18 @@ def get_emb_matrix_relation(
 
     emb_matrix = np.zeros((len(relation_dict), embedding_dim))
 
-    if dataset_name =="wn18rr":
+    if dataset_name == "wn18rr":
         for relation in relation_dict:
             relation_id = relation_dict[relation]
-            word_list = relation.split('_')      
+            word_list = relation.split("_")
             word_list = [i for i in word_list if i]
             if sub_word:
-                raise NotImplementedError # TODO (if only there were 48hrs in a day)
+                raise NotImplementedError  # TODO (if only there were 48hrs in a day)
             else:
                 try:
-                    emb_matrix[relation_id, :] = get_vector_from_word_list(word_list, w2v_model, embedding_dim)
+                    emb_matrix[relation_id, :] = get_vector_from_word_list(
+                        word_list, w2v_model, embedding_dim
+                    )
                 except:
                     tmp = torch.empty(embedding_dim)
                     torch.nn.init.normal_(tmp)
@@ -170,23 +173,30 @@ def get_emb_matrix_relation(
             path_components = relation[1:].split("/")
             path_components.reverse()
             emb = torch.empty(embedding_dim)
-            for i,component in enumerate(path_components):
-                component = component.replace('.', '')
-                word_list = relation.split('_')
+            sum_of_weights = 0
+            for i in range(len(path_components)):
+                sum_of_weights += 2 ** (-(i + 1))
+            for i, component in enumerate(path_components):
+                component = component.replace(".", "")
+                word_list = relation.split("_")
                 word_list = [i for i in word_list if i]
                 if sub_word:
-                    raise NotImplementedError # TODO (if only there were 48hrs in a day)
+                    raise NotImplementedError  # TODO (if only there were 48hrs in a day)
                 else:
                     try:
-                        comp_weight = 2^(-(i+1))
-                        emb_matrix[relation_id, :] += comp_weight * get_vector_from_word_list(word_list, w2v_model, embedding_dim)
+                        comp_weight = 2 ^ (-(i + 1))
+                        emb_matrix[
+                            relation_id, :
+                        ] += comp_weight * get_vector_from_word_list(
+                            word_list, w2v_model, embedding_dim
+                        )
                     except:
                         tmp = torch.empty(embedding_dim)
                         torch.nn.init.normal_(tmp)
-                        comp_weight = 2^(-(i+1))
+                        comp_weight = 2 ** (-(i + 1))
                         emb_matrix[relation_id, :] += comp_weight * tmp.numpy()
                         print("exception")
 
             emb_matrix[relation_id, :] = emb
-       
+
     return torch.from_numpy(emb_matrix.astype(np.float32))
