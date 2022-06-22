@@ -13,12 +13,9 @@
       "entity_bias_initializer": "zeros_",
       "relation_initializer": "normal_",
       "relation_initializer_kwargs": {
-        "std": 1.0e-03
       },
       "relation_matrix_initializer": "uniform_",
       "relation_matrix_initializer_kwargs": {
-        "a": -1,
-        "b": 1
       }
     },
     "optimizer": "SGD",
