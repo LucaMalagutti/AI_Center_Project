@@ -157,19 +157,36 @@ def get_bert_embeddings_relation(layers=[-1], dataset_name="WN18RR", bert_model=
 
     if dataset_name == "wn18rr":
         dataset = WN18RR()
+    elif dataset_name == "fb15k237":
+        dataset = FB15k237()
     else:
         raise NotImplementedError("Dataset not implemented")
+        
 
     relation_dict = dataset.training.relation_to_id
     
     emb_matrix = np.zeros((len(relation_dict), embedding_dim))
 
-    for relation in tqdm(relation_dict):
-        relation_id = relation_dict[relation]
-        input_sentence = relation[1:].replace('_', ' ')
-        idx_list = [get_word_idx(input_sentence, word) for word in input_sentence.split(" ")]
-        emb = get_word_vector(input_sentence, idx_list, tokenizer, model, layers, entity_name=input_sentence)
-        emb_matrix[relation_id, :] = emb
+    if dataset_name =="wn18rr":
+        for relation in tqdm(relation_dict):
+            relation_id = relation_dict[relation]
+            input_sentence = relation[1:].replace('_', ' ')
+            idx_list = [get_word_idx(input_sentence, word) for word in input_sentence.split(" ")]
+            emb = get_word_vector(input_sentence, idx_list, tokenizer, model, layers, entity_name=input_sentence)
+            emb_matrix[relation_id, :] = emb
+    elif dataset_name == "fb15k237":
+        for relation in tqdm(relation_dict):
+            relation_id = relation_dict[relation]
+            path_components = relation[1:].split("/")
+            path_components.reverse()
+            emb = torch.empty(embedding_dim)
+            for i,component in enumerate(path_components):
+                component = component.replace('.', '')
+                input_sentence = component.replace('_', ' ')
+                idx_list = [get_word_idx(input_sentence, word) for word in input_sentence.split(" ")]
+                comp_weight = 2^(-(i+1))
+                emb += comp_weight * get_word_vector(input_sentence, idx_list, tokenizer, model, layers, entity_name=input_sentence)
+            emb_matrix[relation_id, :] = emb
 
     emb_matrix = torch.from_numpy(emb_matrix.astype(np.float32))
     return emb_matrix

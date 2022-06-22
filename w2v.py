@@ -127,6 +127,8 @@ def get_emb_matrix_relation(
 
     if dataset_name == "wn18rr":
         dataset = WN18RR()
+    elif dataset_name == "fb15k237":
+        dataset = FB15k237()
     else:
         raise NotImplementedError
 
@@ -146,19 +148,45 @@ def get_emb_matrix_relation(
 
     emb_matrix = np.zeros((len(relation_dict), embedding_dim))
 
-    for relation in relation_dict:
-        relation_id = relation_dict[relation]
-        word_list = relation.split('_')      
-        word_list = [i for i in word_list if i]
-        if sub_word:
-            raise NotImplementedError # TODO (if only there were 48hrs in a day)
-        else:
-            try:
-                emb_matrix[relation_id, :] = get_vector_from_word_list(word_list, w2v_model, embedding_dim)
-            except:
-                tmp = torch.empty(embedding_dim)
-                torch.nn.init.normal_(tmp)
-                emb_matrix[relation_id, :] = tmp.numpy()
-                print("exception")
+    if dataset_name =="wn18rr":
+        for relation in relation_dict:
+            relation_id = relation_dict[relation]
+            word_list = relation.split('_')      
+            word_list = [i for i in word_list if i]
+            if sub_word:
+                raise NotImplementedError # TODO (if only there were 48hrs in a day)
+            else:
+                try:
+                    emb_matrix[relation_id, :] = get_vector_from_word_list(word_list, w2v_model, embedding_dim)
+                except:
+                    tmp = torch.empty(embedding_dim)
+                    torch.nn.init.normal_(tmp)
+                    emb_matrix[relation_id, :] = tmp.numpy()
+                    print("exception")
+
+    elif dataset_name == "fb15k237":
+        for relation in tqdm(relation_dict):
+            relation_id = relation_dict[relation]
+            path_components = relation[1:].split("/")
+            path_components.reverse()
+            emb = torch.empty(embedding_dim)
+            for i,component in enumerate(path_components):
+                component = component.replace('.', '')
+                word_list = relation.split('_')
+                word_list = [i for i in word_list if i]
+                if sub_word:
+                    raise NotImplementedError # TODO (if only there were 48hrs in a day)
+                else:
+                    try:
+                        comp_weight = 2^(-(i+1))
+                        emb_matrix[relation_id, :] += comp_weight * get_vector_from_word_list(word_list, w2v_model, embedding_dim)
+                    except:
+                        tmp = torch.empty(embedding_dim)
+                        torch.nn.init.normal_(tmp)
+                        comp_weight = 2^(-(i+1))
+                        emb_matrix[relation_id, :] += comp_weight * tmp.numpy()
+                        print("exception")
+
+            emb_matrix[relation_id, :] = emb
        
     return torch.from_numpy(emb_matrix.astype(np.float32))
