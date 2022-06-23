@@ -8,6 +8,10 @@ from pykeen.datasets import WN18RR, FB15k237
 from nltk import PorterStemmer
 import pylcs
 import pdb
+import os
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 
 def get_stemmer_mean_weights(stemmer, tokenizer, word):
@@ -239,7 +243,7 @@ def get_bert_embeddings_relation(
             relation_id = relation_dict[relation]
             path_components = relation[1:].split("/")
             path_components.reverse()
-            emb = torch.empty(embedding_dim)
+            emb = torch.zeros(embedding_dim)
             sum_of_weights = 0
             for i in range(len(path_components)):
                 sum_of_weights += 2 ** (-(i + 1))
@@ -259,6 +263,7 @@ def get_bert_embeddings_relation(
                     layers,
                     entity_name=input_sentence,
                 )
+
             emb_matrix[relation_id, :] = emb
 
     emb_matrix = torch.from_numpy(emb_matrix.astype(np.float32))

@@ -172,7 +172,7 @@ def get_emb_matrix_relation(
             relation_id = relation_dict[relation]
             path_components = relation[1:].split("/")
             path_components.reverse()
-            emb = torch.empty(embedding_dim)
+            emb = torch.zeros(embedding_dim)
             sum_of_weights = 0
             for i in range(len(path_components)):
                 sum_of_weights += 2 ** (-(i + 1))
