@@ -40,6 +40,45 @@ def load_configuration(
         f"Unknown configuration file format: {path.suffix}. Valid formats: json, yaml"
     )
 
+def get_relation_matrix_initializer(
+     init: str, model_name,embedding_dim, dataset_name, config, vectors_dir="word_vectors", bert_layer=[-1]):
+    """Get the Relation matrix embeddings initializer."""
+    
+    if init == "glove":
+        emb_matrix =  w2v.get_emb_matrix_relation(
+                f"{vectors_dir}/glove-wiki-gigaword-{embedding_dim}.bin",
+                embedding_dim,
+                sub_word=False,
+                dataset_name=dataset_name,
+            )
+        emb_matrix_new = torch.zeros(emb_matrix.shape[0],embedding_dim,embedding_dim)
+        print(emb_matrix.shape)
+        print(emb_matrix_new.shape)
+        for i in range(emb_matrix_new.shape[0]):
+            emb_matrix_new[i,:,:] = torch.diag(emb_matrix[i,:])
+        
+        relation_initializer = PretrainedInitializer(
+          emb_matrix_new # not sure here
+        )
+        
+    elif init == "bert":
+        emb_matrix = get_bert_embeddings_relation(
+            layers=bert_layer,
+            dataset_name=dataset_name,
+            bert_model="prajjwal1/bert-mini"
+        )
+        emb_matrix_new = torch.zeros(emb_matrix.shape[0],embedding_dim,embedding_dim)
+        print(emb_matrix.shape)
+        print(emb_matrix_new.shape)
+        for i in range(emb_matrix_new.shape[0]):
+            emb_matrix_new[i,:,:] = torch.diag(emb_matrix[i,:])
+        relation_initializer = PretrainedInitializer(
+          emb_matrix_new # not sure here
+        )
+    else:
+        relation_initializer = config["pipeline"]["model_kwargs"]["relation_matrix_initializer"]
+    return relation_initializer
+
 
 
 def get_relation_initializer(
@@ -172,6 +211,11 @@ def pipeline_from_config(
     entity_initializer = get_entity_initializer(
         init, embedding_dim, dataset_name, config, vectors_dir, bert_layer, bert_stem, bert_desc, bert_layer_weights,
     )
+    if model_name == "mure":
+        relation_matrix_initializer = get_relation_matrix_initializer(
+        relation_matrix_init, model_name, embedding_dim, dataset_name, config, vectors_dir, bert_layer)
+        config["pipeline"]["model_kwargs"]["relation_matrix_initializer"] = relation_matrix_initializer
+    
 
     if random_seed is not None:
         config["pipeline"]["random_seed"] = random_seed
@@ -182,6 +226,7 @@ def pipeline_from_config(
         config["pipeline"]["model_kwargs"]["relation_dim"] = embedding_dim
     config["pipeline"]["model_kwargs"]["embedding_dim"] = embedding_dim
     config["pipeline"]["training_kwargs"]["num_epochs"] = num_epochs
+
 
     if model_name == "mure":
         if init == "baseline":
@@ -198,10 +243,10 @@ def pipeline_from_config(
         metadata=dict(
             title=run_name,
         ),
-        result_tracker="wandb",
-        result_tracker_kwargs=dict(
-            project="W2V_for_KGs", entity="eth_ai_center_kg_project", group=wandb_group
-        ),
+        #result_tracker="wandb",
+        #result_tracker_kwargs=dict(
+        #    project="W2V_for_KGs", entity="eth_ai_center_kg_project", group=wandb_group
+        #),
         **pipeline_kwargs,
     )
 
