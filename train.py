@@ -178,7 +178,7 @@ def pipeline_from_config(
 
     config["pipeline"]["model_kwargs"]["entity_initializer"] = entity_initializer
     config["pipeline"]["model_kwargs"]["relation_initializer"] = relation_initializer
-    if relation_init and model_name != "mure":
+    if relation_init and model_name not in ["mure", "distmult"]:
         config["pipeline"]["model_kwargs"]["relation_dim"] = embedding_dim
     config["pipeline"]["model_kwargs"]["embedding_dim"] = embedding_dim
     config["pipeline"]["training_kwargs"]["num_epochs"] = num_epochs
