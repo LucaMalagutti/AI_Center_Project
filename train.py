@@ -17,9 +17,19 @@ from typing import (
 )
 import os
 import dotenv
+import random
+import numpy as np
 
 # Load environment variables from `.env`.
 dotenv.load_dotenv(override=True)
+
+def set_all_seeds(seed_num):
+    print(f"[ Using seed : {seed_num} ]")
+    torch.manual_seed(seed_num)
+    torch.cuda.manual_seed_all(seed_num)
+    torch.cuda.manual_seed(seed_num)
+    random.seed(seed_num)
+    np.random.seed(seed_num)
 
 
 def load_configuration(
@@ -337,6 +347,8 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    set_all_seeds(args.random_seed)
 
     bert_layer_weights = []
     if args.bert_layer_weight_1 is not None:
