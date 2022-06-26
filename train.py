@@ -276,7 +276,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--random_seed",
         type=int,
-        default=None,
+        default=17,
         nargs="?",
         help="Random seed for the pipeline",
     )
