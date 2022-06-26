@@ -10,9 +10,6 @@ import pylcs
 import pdb
 import os
 
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-
 
 def get_stemmer_mean_weights(stemmer, tokenizer, word):
     stemmed = stemmer.stem(word)

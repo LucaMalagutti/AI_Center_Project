@@ -5,7 +5,7 @@ import torch
 from pykeen.datasets import WN18RR, FB15k237
 import json
 import pdb
-
+from tqdm import tqdm
 
 def get_id_description_dict(dataset_name):
     if dataset_name == "wn18rr":
@@ -62,16 +62,30 @@ def get_id_word_dict(dataset_name, sub_word=True):
     return id_word_dict
 
 
-def get_vector_from_word_list(word_list, word_vectors, embedding_dim):
+def get_vector_from_word_list(word_list, word_vectors, embedding_dim, rel_fb_mod=False, prev_vec=None):
     vector = np.zeros(embedding_dim)
-    for word in word_list:
-        try:
-            vector += word_vectors[word]
-        except:
-            tmp = torch.empty(embedding_dim)
-            torch.nn.init.normal_(tmp)
-            vector += tmp.numpy()
-    return vector / len(word_list)
+    
+    if rel_fb_mod:
+        n_words = 0
+        for word in word_list:
+            try:
+                vector += word_vectors[word]
+                n_words += 1
+            except:
+                pass
+        if n_words > 0:
+            return vector/n_words
+        else:
+            return prev_vec
+    else:
+        for word in word_list:
+            try:
+                vector += word_vectors[word]
+            except:
+                tmp = torch.empty(embedding_dim)
+                torch.nn.init.normal_(tmp)
+                vector += tmp.numpy()
+        return vector / len(word_list)
 
 
 def get_emb_matrix(
@@ -183,19 +197,13 @@ def get_emb_matrix_relation(
                 if sub_word:
                     raise NotImplementedError  # TODO (if only there were 48hrs in a day)
                 else:
-                    try:
-                        comp_weight = 2 ^ (-(i + 1))
-                        emb_matrix[
-                            relation_id, :
-                        ] += comp_weight * get_vector_from_word_list(
-                            word_list, w2v_model, embedding_dim
-                        )
-                    except:
-                        tmp = torch.empty(embedding_dim)
-                        torch.nn.init.normal_(tmp)
-                        comp_weight = 2 ** (-(i + 1))
-                        emb_matrix[relation_id, :] += comp_weight * tmp.numpy()
-                        print("exception")
+                    comp_weight = (2 ** (-(i + 1)))/sum_of_weights
+                    emb += comp_weight * get_vector_from_word_list(
+                        word_list, w2v_model, embedding_dim, rel_fb_mod=True, prev_vec=emb
+                    )
+            if torch.count_nonzero(emb) < 1:
+                emb = torch.empty(embedding_dim)
+                torch.nn.init.normal_(emb)
 
             emb_matrix[relation_id, :] = emb
 
