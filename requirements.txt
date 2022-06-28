@@ -8,4 +8,3 @@ wandb
 transformers
 nltk
 pylcs
-git+https://github.com/AlessandroRuzzi/pykeen_mod.git

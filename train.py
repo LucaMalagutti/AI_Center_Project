@@ -1,6 +1,7 @@
 from pykeen.pipeline import pipeline
 from pykeen.nn.init import PretrainedInitializer
 from bert_embs import get_bert_embeddings, get_bert_embeddings_relation
+from data_relation_init import get_data_relation_matrix
 import w2v
 import json
 import argparse
@@ -54,35 +55,39 @@ def load_configuration(
 def get_relation_initializer(
      init: str, model_name,embedding_dim, dataset_name, config, vectors_dir="word_vectors", bert_layer=[-1]):
     """Get the Relation embeddings initializer."""
-    
-    if init == "glove":
-        emb_matrix =  w2v.get_emb_matrix_relation(
-                f"{vectors_dir}/glove-wiki-gigaword-{embedding_dim}.bin",
-                embedding_dim,
-                sub_word=False,
-                dataset_name=dataset_name,
+    if args.use_data_relation_init:
+        relation_initializer = PretrainedInitializer(
+            get_data_relation_matrix(model_name, dataset_name, init)
+        )
+    else: 
+        if init == "glove":
+            emb_matrix =  w2v.get_emb_matrix_relation(
+                    f"{vectors_dir}/glove-wiki-gigaword-{embedding_dim}.bin",
+                    embedding_dim,
+                    sub_word=False,
+                    dataset_name=dataset_name,
+                )
+            if model_name == "tucker":
+                emb_matrix = emb_matrix.repeat(2,1)
+            relation_initializer = PretrainedInitializer(
+            emb_matrix # not sure here
             )
-        if model_name == "tucker":
-            emb_matrix = emb_matrix.repeat(2,1)
-        relation_initializer = PretrainedInitializer(
-          emb_matrix # not sure here
-        )
-        
-    elif init == "bert":
-        emb_matrix = get_bert_embeddings_relation(
-            layers=bert_layer,
-            dataset_name=dataset_name,
-            bert_model="prajjwal1/bert-mini"
-        )
-        if model_name == "tucker":
-            emb_matrix = emb_matrix.repeat(2,1)
-        relation_initializer = PretrainedInitializer(
-          emb_matrix # not sure here
-        )
-    else:
-        relation_initializer = config["pipeline"]["model_kwargs"]["relation_initializer"]
-    return relation_initializer
+            
+        elif init == "bert":
+            emb_matrix = get_bert_embeddings_relation(
+                layers=bert_layer,
+                dataset_name=dataset_name,
+                bert_model="prajjwal1/bert-mini"
+            )
+            if model_name == "tucker":
+                emb_matrix = emb_matrix.repeat(2,1)
+            relation_initializer = PretrainedInitializer(
+            emb_matrix # not sure here
+            )
+        else:
+            relation_initializer = config["pipeline"]["model_kwargs"]["relation_initializer"]
 
+    return relation_initializer
 
 
 def get_entity_initializer(
@@ -181,8 +186,6 @@ def pipeline_from_config(
         init, embedding_dim, dataset_name, config, vectors_dir, bert_layer, bert_stem, bert_desc, bert_layer_weights,
     )
     
-    
-
     if random_seed is not None:
         config["pipeline"]["random_seed"] = random_seed
 
@@ -251,6 +254,11 @@ if __name__ == "__main__":
         default=None,
         nargs="?",
         help="How to initialise relation embeddings: baseline, glove, bert",
+    )
+    parser.add_argument(
+        "--use_data_relation_init",
+        action="store_true",
+        help="initialize relation vectors as average of scoring function wrt entities"
     )
     parser.add_argument(
         "--embdim",
