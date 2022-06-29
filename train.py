@@ -51,6 +51,35 @@ def load_configuration(
         f"Unknown configuration file format: {path.suffix}. Valid formats: json, yaml"
     )
 
+def get_relation_matrix_initializer(
+     init: str, model_name,embedding_dim, dataset_name, config, vectors_dir="word_vectors", bert_layer=[-1]):
+    """Get the Relation matrix embeddings initializer."""
+
+    if init == "glove":
+        emb_matrix =  w2v.get_emb_matrix_relation(
+                f"{vectors_dir}/glove-wiki-gigaword-{embedding_dim}.bin",
+                embedding_dim,
+                sub_word=False,
+                dataset_name=dataset_name,
+            )
+
+        relation_initializer = PretrainedInitializer(
+          emb_matrix # not sure here
+        )
+
+    elif init == "bert":
+        emb_matrix = get_bert_embeddings_relation(
+            layers=bert_layer,
+            dataset_name=dataset_name,
+            bert_model="prajjwal1/bert-mini"
+        )
+        relation_initializer = PretrainedInitializer(
+          emb_matrix # not sure here
+        )
+    else:
+        relation_initializer = config["pipeline"]["model_kwargs"]["relation_matrix_initializer"]
+    return relation_initializer
+
 
 def get_relation_initializer(
      init: str, model_name,embedding_dim, dataset_name, config, vectors_dir="word_vectors", bert_layer=[-1]):
@@ -155,6 +184,7 @@ def pipeline_from_config(
     dropout_1: float,
     dropout_2: float,
     relation_init: str,
+    relation_matrix_init: str,
 ):
     """Initialize pipeline parameters from config file."""
 
@@ -191,14 +221,14 @@ def pipeline_from_config(
 
     config["pipeline"]["model_kwargs"]["entity_initializer"] = entity_initializer
     config["pipeline"]["model_kwargs"]["relation_initializer"] = relation_initializer
-    if model_name == "mure" and relation_init == None:
-        config["pipeline"]["model_kwargs"]["relation_matrix_initializer"] = "uniform_"
-    elif model_name == "mure":
-         config["pipeline"]["model_kwargs"]["relation_matrix_initializer"] = relation_initializer
     if relation_init and model_name not in ["mure", "distmult"]:
         config["pipeline"]["model_kwargs"]["relation_dim"] = embedding_dim
     config["pipeline"]["model_kwargs"]["embedding_dim"] = embedding_dim
     config["pipeline"]["training_kwargs"]["num_epochs"] = num_epochs
+
+    if model_name == "mure":
+        relation_matrix_initializer = get_relation_matrix_initializer(relation_matrix_init, model_name, embedding_dim, dataset_name, config, vectors_dir, bert_layer)
+        config["pipeline"]["model_kwargs"]["relation_matrix_initializer"] = relation_matrix_initializer
 
 
     if model_name == "mure":
@@ -206,6 +236,7 @@ def pipeline_from_config(
             config["pipeline"]["model_kwargs"]["entity_initializer_kwargs"] = dict( std=1.0e-03,)
         if relation_init == None:
             config["pipeline"]["model_kwargs"]["relation_initializer_kwargs"] = dict( std=1.0e-03,)
+        if relation_matrix_init == None:
             config["pipeline"]["model_kwargs"]["relation_matrix_initializer_kwargs"] = dict(a=-1,b=1,)
 
     run_name = f"{init}_{embedding_dim}_{model_name}_{dataset_name}"
@@ -254,6 +285,13 @@ if __name__ == "__main__":
         default=None,
         nargs="?",
         help="How to initialise relation embeddings: baseline, glove, bert",
+    )
+    parser.add_argument(
+        "--relation_matrix_init",
+        type=str,
+        default=None,
+        nargs="?",
+        help="How to initialise relation matrix mure: baseline, glove, bert",
     )
     parser.add_argument(
         "--use_data_relation_init",
@@ -396,4 +434,5 @@ if __name__ == "__main__":
         args.dropout_1,
         args.dropout_2,
         args.relation_init,
+        args.relation_matrix_init,
     )
