@@ -1,4 +1,5 @@
 from collections import defaultdict
+from re import I
 from pykeen import datasets
 from w2v import get_id_word_dict
 from bert_embs import get_word_idx, get_word_vector
@@ -29,7 +30,7 @@ def normalize_vector(v):
     return v / norm
 
 
-def construct_data_relation_matrix(model: str, dataset_name: str, we_init: str):
+def construct_data_relation_matrix(model: str, dataset_name: str, we_init: str, absolute_coeffs=True):
     bert_tokenizer = AutoTokenizer.from_pretrained("prajjwal1/bert-mini")
     bert_model = AutoModel.from_pretrained("prajjwal1/bert-mini", output_hidden_states=True)
     emb_dim = 256
@@ -69,19 +70,27 @@ def construct_data_relation_matrix(model: str, dataset_name: str, we_init: str):
         for dim_idx in tqdm(range(emb_dim)):
             dim_counter = 0
             for rel_triple in entities_per_relation[rel_name]:
-                if entity_vectors[rel_triple[0]][dim_idx] * entity_vectors[rel_triple[1]][dim_idx] > 0:
-                    dim_counter += 1
+                if model.lower() == "distmult":
+                    if entity_vectors[rel_triple[0]][dim_idx] * entity_vectors[rel_triple[1]][dim_idx] > 0:
+                        dim_counter += 1
             
-            if len(entities_per_relation[rel_name]):
-                rel_vector[dim_idx] = dim_counter / len(entities_per_relation[rel_name])
+            if absolute_coeffs:
+                if dim_counter > len(entities_per_relation[rel_name])/2:
+                    rel_vector[dim_idx] = 1.0
+                else:
+                    rel_vector[dim_idx] = -1.0
             else:
-                rel_vector[dim_idx] = random.random()
+                if len(entities_per_relation[rel_name]):
+                    rel_vector[dim_idx] = dim_counter / len(entities_per_relation[rel_name])
+                else:
+                    rel_vector[dim_idx] = random.random()
         
         relation_vectors[rel_name] = rel_vector
 
-    relation_vectors = {k: normalize_vector(v) for k, v in relation_vectors.items()}
-    relation_to_id_map = dataset.training.relation_to_id
+    if not absolute_coeffs:
+        relation_vectors = {k: normalize_vector(v) for k, v in relation_vectors.items()}
 
+    relation_to_id_map = dataset.training.relation_to_id
     relation_matrix = np.zeros((len(entities_per_relation), emb_dim))
 
     for relation_name, relation_vector in relation_vectors.items():
@@ -111,7 +120,7 @@ def get_data_relation_matrix(model: str, dataset: str, we_init: str):
     if os.path.exists(saved_matrix_path):
         with open(saved_matrix_path, 'rb') as f:
             rel_matrix = pickle.load(f)
-        return rel_matrix
+        return torch.from_numpy(rel_matrix.astype(np.float32))
     
     else:
         return construct_data_relation_matrix(model, dataset, we_init)
