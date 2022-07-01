@@ -93,7 +93,9 @@ class Experiment:
                     mure_init=True
                 )
 
-            new_entity_matrix = torch.zeros(len(d.entities), 200)
+            new_entity_matrix = torch.tensor(
+                np.random.uniform(-1, 1, (len(d.entities), self.dim))
+            )
             for entity_id in entity_dict:
                 entity_vector = entity_matrix[entity_dict[entity_id], :]
                 new_entity_matrix[self.entity_idxs[entity_id], :] = entity_vector
