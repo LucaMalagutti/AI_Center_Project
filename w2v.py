@@ -43,15 +43,21 @@ def proc_fb_label(label, sub_word=True):
         return label_list
 
 
-def get_id_word_dict(dataset_name, sub_word=True):
+def get_id_word_dict(dataset_name, sub_word=True, mure_init=False):
     if dataset_name == "wn18rr":
         id_word_dict = {}
-        with open("aux_data/WN18RR/wordnet-mlj12-definitions.txt", "r") as f:
+        path = "aux_data/WN18RR/wordnet-mlj12-definitions.txt"
+        if mure_init:
+            path = "../" + path
+        with open(path, "r") as f:
             for line in f:
                 sense_id, word = dict_entry_from_line(line, sub_word)
                 id_word_dict[sense_id] = word
     elif dataset_name == "fb15k237":
-        with open("aux_data/entity2wikidata.json", "r") as f:
+        path = "aux_data/entity2wikidata.json"
+        if mure_init:
+            path = "../" + path
+        with open(path, "r") as f:
             entity2wikidata = json.load(f)
         id_word_dict = {
             entity_id: proc_fb_label(entity2wikidata[entity_id]["label"])
@@ -89,7 +95,7 @@ def get_vector_from_word_list(word_list, word_vectors, embedding_dim, rel_fb_mod
 
 
 def get_emb_matrix(
-    init_embeddings_path, embedding_dim, sub_word=True, dataset_name=None
+    init_embeddings_path, embedding_dim, sub_word=True, dataset_name=None, mure_init=False
 ):
     if dataset_name == "wn18rr":
         dataset = WN18RR()
@@ -100,7 +106,7 @@ def get_emb_matrix(
 
     entity_dict = dataset.training.entity_to_id
 
-    id_word_dict = get_id_word_dict(dataset_name, sub_word)
+    id_word_dict = get_id_word_dict(dataset_name, sub_word, mure_init=mure_init)
 
     if "cc" in init_embeddings_path:
         w2v_model = load_facebook_model(init_embeddings_path).wv
@@ -134,7 +140,10 @@ def get_emb_matrix(
                 torch.nn.init.normal_(tmp)
                 emb_matrix[entity_emb_idx, :] = tmp.numpy()
 
-    return torch.from_numpy(emb_matrix.astype(np.float32))
+    if mure_init:
+        return torch.from_numpy(emb_matrix.astype(np.float32)), entity_dict
+    else:
+        return torch.from_numpy(emb_matrix.astype(np.float32))
 
 
 def get_emb_matrix_relation(
