@@ -36,6 +36,7 @@ class Experiment:
         return er_vocab
 
     def evaluate(self, model, data):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         hits = []
         ranks = []
         for i in range(10):
@@ -48,13 +49,9 @@ class Experiment:
         
         for i in range(0, len(test_data_idxs)):
             data_point = test_data_idxs[i]
-            e1_idx = torch.tensor(data_point[0])
-            r_idx = torch.tensor(data_point[1])
-            e2_idx = torch.tensor(data_point[2])
-            if self.cuda:
-                e1_idx = e1_idx.cuda()
-                r_idx = r_idx.cuda()
-                e2_idx = e2_idx.cuda()
+            e1_idx = torch.tensor(data_point[0]).to(device)
+            r_idx = torch.tensor(data_point[1]).to(device)
+            e2_idx = torch.tensor(data_point[2]).to(device)
             predictions_s = model.forward(e1_idx.repeat(len(d.entities)), 
                             r_idx.repeat(len(d.entities)), range(len(d.entities)))
 
@@ -132,8 +129,8 @@ class Experiment:
         param_names = [name for name, _ in model.named_parameters()]
         opt = RiemannianSGD(model.parameters(), lr=self.learning_rate, param_names=param_names)
         
-        if self.cuda:
-            model.cuda()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.to(device)
             
         er_vocab = self.get_er_vocab(train_data_idxs)
 
@@ -156,16 +153,17 @@ class Experiment:
                 targets = np.zeros(e1_idx.shape)
                 targets[:, 0] = 1
                 targets = torch.DoubleTensor(targets)
+                targets.to(device)
 
                 opt.zero_grad()
-                if self.cuda:
-                    e1_idx = e1_idx.cuda()
-                    r_idx = r_idx.cuda()
-                    e2_idx = e2_idx.cuda()
-                    targets = targets.cuda()
+
+                e1_idx = e1_idx.to(device)
+                r_idx = r_idx.to(device)
+                e2_idx = e2_idx.to(device)
+                targets = targets.to(device)
 
                 predictions = model.forward(e1_idx, r_idx, e2_idx)      
-                loss = model.loss(predictions, targets)
+                loss = model.loss(predictions.cpu(), targets.cpu())
                 loss.backward()
                 opt.step()
                 losses.append(loss.item())
