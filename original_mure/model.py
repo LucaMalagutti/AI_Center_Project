@@ -57,12 +57,14 @@ class MuRE(torch.nn.Module):
             self.E.weight.data = (1e-3 * torch.randn((len(d.entities), dim), dtype=torch.double, device=device))
         
         if rel_mat is not None:
-            self.Wu = rel_mat.repeat(2,1)
+            self.Wu = torch.nn.Parameter(rel_mat.repeat(2,1))
+            self.Wu.requires_grad = True
+            self.Wu.to(device)
         else:
             self.Wu = torch.nn.Parameter(torch.tensor(np.random.uniform(-1, 1, (len(d.relations), 
                                             dim)), dtype=torch.double, requires_grad=True, device=device))
-        self.rv = torch.nn.Embedding(len(d.relations), dim, padding_idx=0)
 
+        self.rv = torch.nn.Embedding(len(d.relations), dim, padding_idx=0)
         if rel_vec is not None:
             self.rv.weight.data = rel_vec.repeat(2,1)
         else:
