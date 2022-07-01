@@ -136,7 +136,7 @@ def get_bert_embeddings(
     use_entity_descriptions=False,
     weigh_mean=False,
     layer_weights=None,
-    mure_init=False
+    mure_init=False,
 ):
     dataset_name = dataset_name.lower()
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
@@ -154,7 +154,9 @@ def get_bert_embeddings(
 
     entity_dict = dataset.training.entity_to_id
 
-    entity_id_to_word = get_id_word_dict(dataset_name, sub_word=True)
+    entity_id_to_word = get_id_word_dict(
+        dataset_name, sub_word=True, mure_init=mure_init
+    )
     if use_entity_descriptions:
         if dataset_name == "wn18rr":
             entity_id_to_description = get_id_description_dict(dataset_name)
