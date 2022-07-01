@@ -136,6 +136,7 @@ def get_bert_embeddings(
     use_entity_descriptions=False,
     weigh_mean=False,
     layer_weights=None,
+    mure_init=False
 ):
     dataset_name = dataset_name.lower()
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
@@ -195,7 +196,10 @@ def get_bert_embeddings(
 
     emb_matrix = torch.from_numpy(emb_matrix.astype(np.float32))
 
-    return emb_matrix
+    if mure_init:
+        return emb_matrix, entity_dict
+    else:
+        return emb_matrix
 
 
 def get_bert_embeddings_relation(

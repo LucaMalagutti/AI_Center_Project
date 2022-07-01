@@ -11,6 +11,7 @@ import sys
 
 sys.path.insert(0,'..')
 from w2v import get_emb_matrix, get_emb_matrix_relation
+from bert_embs import get_bert_embeddings, get_bert_embeddings_relation
     
 class Experiment:
 
@@ -98,6 +99,21 @@ class Experiment:
                 entity_vector = entity_matrix[entity_dict[entity_id], :]
                 new_entity_matrix[self.entity_idxs[entity_id], :] = entity_vector
             entity_matrix = new_entity_matrix
+        elif args.init =="bert":
+            entity_matrix, entity_dict = get_bert_embeddings(
+                    layers=args.bert_layer,
+                    layer_weights=args.bert_layer_weights,
+                    dataset_name=dataset,
+                    bert_model="prajjwal1/bert-mini",
+                    use_entity_descriptions=args.bert_desc,
+                    weigh_mean=False,
+                    mure_init=True
+                )
+            new_entity_matrix = torch.zeros(len(d.entities), 200)
+            for entity_id in entity_dict:
+                entity_vector = entity_matrix[entity_dict[entity_id], :]
+                new_entity_matrix[self.entity_idxs[entity_id], :] = entity_vector
+            entity_matrix = new_entity_matrix
         else:
             entity_matrix = None
         if args.relation_init == "glove":
@@ -107,6 +123,12 @@ class Experiment:
                 dataset_name=dataset,
                 sub_word=False
             )
+        elif args.relation_init == "bert":
+            rel_vec = get_bert_embeddings_relation(
+                layers=args.bert_layer,
+                dataset_name=dataset_name,
+                bert_model="prajjwal1/bert-mini"
+            )
         else:
             rel_vec = None
         if args.relation_matrix_init == "glove":
@@ -115,6 +137,12 @@ class Experiment:
                 embedding_dim=200,
                 dataset_name=dataset,
                 sub_word=False
+            )
+        elif args.relation_matrix_init == "bert":
+            rel_mat = get_bert_embeddings_relation(
+                layers=args.bert_layer,
+                dataset_name=dataset_name,
+                bert_model="prajjwal1/bert-mini"
             )
         else:
             rel_mat = None
@@ -224,10 +252,70 @@ if __name__ == '__main__':
         nargs="?",
         help="Directory where vectors are stored",
     )
+    parser.add_argument(
+        "--bert_layer",
+        default=[0],
+        nargs="+",
+        help="BERT layer to take embeddings from",
+    )
+    parser.add_argument(
+        "--bert_layer_weight_1",
+        default=None,
+        type=float,
+        nargs="?",
+        help="weights for first bert_layer to computer weighted average",
+    )
+    parser.add_argument(
+        "--bert_layer_weight_2",
+        default=None,
+        type=float,
+        nargs="?",
+        help="weights for second bert_layer to computer weighted average",
+    )
+    parser.add_argument(
+        "--bert_layer_weight_3",
+        default=None,
+        type=float,
+        nargs="?",
+        help="weights for third bert_layer to computer weighted average",
+    )
+    parser.add_argument(
+        "--bert_stem_weighted",
+        action="store_true",
+        help="weight BERT tokens using stemming",
+    )
+    parser.add_argument(
+        "--bert_desc",
+        action="store_true",
+        help="use entity descriptions to init BERT embs",
+    )
         
     args = parser.parse_args()
+
+    bert_layer_weights = []
+    if args.bert_layer_weight_1 is not None:
+        bert_layer_weights.append(args.bert_layer_weight_1)
+    if args.bert_layer_weight_2 is not None:
+        bert_layer_weights.append(args.bert_layer_weight_2)
+    if args.bert_layer_weight_3 is not None:
+        bert_layer_weights.append(args.bert_layer_weight_3)
+    
+    if args.bert_layer is not None:
+        args.bert_layer = [int(x) for x in args.bert_layer]
+    if len(bert_layer_weights) > 0:
+        bert_layer_weights = [float(x) for x in bert_layer_weights]
+
+        assert(len(args.bert_layer) > 1)
+        assert(len(args.bert_layer) == len(bert_layer_weights))
+
+        args.bert_layer_weights = bert_layer_weights
+    else:
+        args.bert_layer_weights = None
+
+
     dataset = args.dataset
     dataset = dataset.lower()
+
 
     args.lr = 50 if dataset == "wn18rr" else 10
     args.dim = 256 if args.init == "bert" else 200
