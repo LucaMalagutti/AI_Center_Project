@@ -30,6 +30,52 @@ def normalize_vector(v):
     return v / norm
 
 
+def get_distmult_data_relation_vectors(entities_per_relation, entity_vectors, emb_dim=256, absolute_coeffs=True):
+    relation_vectors = dict()
+    for rel_name in entities_per_relation:
+        rel_vector = np.zeros((emb_dim, 1))
+
+        for dim_idx in tqdm(range(emb_dim)):
+            dim_counter = 0
+            for rel_triple in entities_per_relation[rel_name]:
+                if entity_vectors[rel_triple[0]][dim_idx] * entity_vectors[rel_triple[1]][dim_idx] > 0:
+                    dim_counter += 1
+            
+            if absolute_coeffs:
+                if dim_counter > len(entities_per_relation[rel_name])/2:
+                    rel_vector[dim_idx] = 1.0
+                else:
+                    rel_vector[dim_idx] = -1.0
+            else:
+                if len(entities_per_relation[rel_name]):
+                    rel_vector[dim_idx] = dim_counter / len(entities_per_relation[rel_name])
+                else:
+                    rel_vector[dim_idx] = random.random()
+        
+        relation_vectors[rel_name] = rel_vector
+
+    if not absolute_coeffs:
+        relation_vectors = {k: normalize_vector(v) for k, v in relation_vectors.items()}
+    
+    return relation_vectors
+
+
+def get_transe_data_relation_vectors(entities_per_relation, entity_vectors, emb_dim=256):
+    relation_vectors = dict()
+    for rel_name in entities_per_relation:
+        rel_vector = np.zeros((emb_dim, ))
+
+        for sub_e, obj_e in entities_per_relation[rel_name]:
+            rel_vector = rel_vector + (np.array(entity_vectors[obj_e]) - np.array(entity_vectors[sub_e]))
+        
+        if len(entities_per_relation[rel_name]):
+            rel_vector = rel_vector / len(entities_per_relation[rel_name])
+        
+        relation_vectors[rel_name] = rel_vector
+    
+    return relation_vectors
+
+
 def construct_data_relation_matrix(model: str, dataset_name: str, we_init: str, absolute_coeffs=True):
     bert_tokenizer = AutoTokenizer.from_pretrained("prajjwal1/bert-mini")
     bert_model = AutoModel.from_pretrained("prajjwal1/bert-mini", output_hidden_states=True)
@@ -63,32 +109,10 @@ def construct_data_relation_matrix(model: str, dataset_name: str, we_init: str, 
                 entity_vectors[triple[1]] = get_bert_entity_vector(triple[1], bert_tokenizer, bert_model)
 
     print("Initializing relation matrix")
-    relation_vectors = dict()
-    for rel_name in entities_per_relation:
-        rel_vector = np.zeros((emb_dim, 1))
-
-        for dim_idx in tqdm(range(emb_dim)):
-            dim_counter = 0
-            for rel_triple in entities_per_relation[rel_name]:
-                if model.lower() == "distmult":
-                    if entity_vectors[rel_triple[0]][dim_idx] * entity_vectors[rel_triple[1]][dim_idx] > 0:
-                        dim_counter += 1
-            
-            if absolute_coeffs:
-                if dim_counter > len(entities_per_relation[rel_name])/2:
-                    rel_vector[dim_idx] = 1.0
-                else:
-                    rel_vector[dim_idx] = -1.0
-            else:
-                if len(entities_per_relation[rel_name]):
-                    rel_vector[dim_idx] = dim_counter / len(entities_per_relation[rel_name])
-                else:
-                    rel_vector[dim_idx] = random.random()
-        
-        relation_vectors[rel_name] = rel_vector
-
-    if not absolute_coeffs:
-        relation_vectors = {k: normalize_vector(v) for k, v in relation_vectors.items()}
+    if model.lower() == "distmult":
+        relation_vectors = get_distmult_data_relation_vectors(entities_per_relation, entity_vectors)
+    else:
+        relation_vectors = get_transe_data_relation_vectors(entities_per_relation, entity_vectors)
 
     relation_to_id_map = dataset.training.relation_to_id
     relation_matrix = np.zeros((len(entities_per_relation), emb_dim))
@@ -107,8 +131,8 @@ def construct_data_relation_matrix(model: str, dataset_name: str, we_init: str, 
 
 
 def get_data_relation_matrix(model: str, dataset: str, we_init: str):
-    if model.lower() != "distmult":
-        raise NotImplementedError("Only distmult supported so far")
+    if model.lower() not in ["distmult", "transe"]:
+        raise NotImplementedError("Only distmult and transe supported so far")
     
     if we_init.lower() != "bert":
         raise NotImplementedError("Only BERT initialization supported so far")
