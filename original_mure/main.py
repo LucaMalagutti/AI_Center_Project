@@ -8,6 +8,7 @@ from model import *
 from rsgd import *
 import argparse
 import sys
+import wandb
 
 sys.path.insert(0, "..")
 from w2v import get_emb_matrix, get_emb_matrix_relation
@@ -96,7 +97,15 @@ class Experiment:
         print("Hits @1: {0}".format(np.mean(hits[0])))
         print("Mean rank: {0}".format(np.mean(ranks)))
         print("Mean reciprocal rank: {0}".format(np.mean(1.0 / np.array(ranks))))
-
+        wandb.log({
+        'Hits @10': np.mean(hits[9]),
+        'Hits @3': np.mean(hits[2]),
+        'Hits @1': np.mean(hits[0]),
+        'Mean rank': np.mean(ranks),
+        'Mean reciprocal rank': np.mean(1./np.array(ranks))
+        })
+        
+        
     def train_and_eval(self):
         print("Training the %s model..." % self.model)
         self.entity_idxs = {d.entities[i]: i for i in range(len(d.entities))}
@@ -307,6 +316,20 @@ if __name__ == "__main__":
         help="Directory where vectors are stored",
     )
     parser.add_argument(
+        "--lr",
+        type=float,
+        default=None,
+        nargs="?",
+        help="training learning rate",  
+    )
+    parser.add_argument(
+        "--wandb_group",
+        type=str,
+        default=None,
+        nargs="?",
+        help="Group name for wandb runs",
+    )
+    parser.add_argument(
         "--bert_layer",
         default=[0],
         nargs="+",
@@ -368,9 +391,14 @@ if __name__ == "__main__":
 
     dataset = args.dataset
     dataset = dataset.lower()
-
-    args.lr = 50 if dataset == "wn18rr" else 10
+    if args.lr is None:
+        args.lr = 50 if dataset == "wn18rr" else 10
     args.dim = 256 if args.init == "bert" else 200
+    
+    run_name = f"{args.init}_{args.dim}_OgMuRE_{dataset}"
+    wandb.init(name=run_name, entity="eth_ai_center_kg_project", project="W2V_for_KGs", group=args.wandb_group)
+    wandb.config.use_pykeen = False
+    wandb.config.update(args)
 
     data_dir = "data/%s/" % dataset
     torch.backends.cudnn.deterministic = True
