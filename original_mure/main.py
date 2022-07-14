@@ -98,10 +98,11 @@ class Experiment:
         print("Mean rank: {0}".format(np.mean(ranks)))
         print("Mean reciprocal rank: {0}".format(np.mean(1.0 / np.array(ranks))))
         wandb.log({
-        'Hits @10': np.mean(hits[9]),
-        'Hits @3': np.mean(hits[2]),
-        'Hits @1': np.mean(hits[0]),
-        'Mean rank': np.mean(ranks),
+        'both.realistic.hits_at_10': np.mean(hits[9]),
+        'both.realistic.hits_at_5': np.mean(hits[4]),
+        'both.realistic.hits_at_3': np.mean(hits[2]),
+        'both.realistic.hits_at_1': np.mean(hits[0]),
+        'both.realistic.adjusted_inverse_harmonic_mean_rank': np.mean(ranks),
         'Mean reciprocal rank': np.mean(1./np.array(ranks))
         })
         
