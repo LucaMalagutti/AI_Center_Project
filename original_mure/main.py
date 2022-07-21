@@ -6,6 +6,7 @@ from collections import defaultdict
 from load_data import Data
 from model import *
 from rsgd import *
+from torch.optim import Adam 
 import argparse
 import sys
 import wandb
@@ -22,6 +23,7 @@ class Experiment:
         dim=40,
         nneg=50,
         model="poincare",
+        opt=None,
         num_iterations=500,
         batch_size=128,
         cuda=False,
@@ -33,6 +35,7 @@ class Experiment:
         self.num_iterations = num_iterations
         self.batch_size = batch_size
         self.cuda = cuda
+        self.opt = opt
 
     def get_data_idxs(self, data):
         data_idxs = [
@@ -185,9 +188,13 @@ class Experiment:
                 d, self.dim, entity_mat=entity_matrix, rel_vec=rel_vec, rel_mat=rel_mat
             )
         param_names = [name for name, _ in model.named_parameters()]
-        opt = RiemannianSGD(
-            model.parameters(), lr=self.learning_rate, param_names=param_names
-        )
+        
+        if (self.opt == "Adam") and (self.model is not "poincare"):
+            opt = Adam(model.parameters(), lr=self.learning_rate)
+        else:
+            opt = RiemannianSGD(
+                model.parameters(), lr=self.learning_rate, param_names=param_names
+            )
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
@@ -333,6 +340,13 @@ if __name__ == "__main__":
         help="Group name for wandb runs",
     )
     parser.add_argument(
+        "--opt",
+        type=str,
+        default=None,
+        nargs="?",
+        help="Choose the optimizer for the training, only for euclidean model",
+    )
+    parser.add_argument(
         "--bert_layer",
         default=[0],
         nargs="+",
@@ -398,7 +412,7 @@ if __name__ == "__main__":
         args.lr = 50 if dataset == "wn18rr" else 10
     args.dim = 256 if args.init == "bert" else 200
     
-    run_name = f"{args.init}_{args.dim}_OgMuRE_{dataset}"
+    run_name = f"{args.init}_{args.dim}_OgMuRE_{dataset}_opt_{args.opt}"
     wandb.init(name=run_name, entity="eth_ai_center_kg_project", project="W2V_for_KGs", group=args.wandb_group)
     wandb.config.use_pykeen = False
     wandb.config.update(args)
@@ -419,5 +433,6 @@ if __name__ == "__main__":
         cuda=args.cuda,
         nneg=args.nneg,
         model=args.model,
+        opt=args.opt
     )
     experiment.train_and_eval()
