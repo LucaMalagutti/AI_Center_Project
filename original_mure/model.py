@@ -51,7 +51,9 @@ class MuRE(torch.nn.Module):
 
         self.E = torch.nn.Embedding(len(d.entities), dim, padding_idx=0)
         if entity_mat is not None:
-            self.E.weight.data = entity_mat
+            entity_mat = entity_mat.double()
+            self.E.weight.data = self.E.weight.data.double()
+            self.E.weight.data = 1e-3 * entity_mat
             self.E.to(device)
         else:
             self.E.weight.data = self.E.weight.data.double()
