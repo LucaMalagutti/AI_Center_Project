@@ -1,10 +1,13 @@
 class Data:
 
-    def __init__(self, data_dir="data/WN18RR/"):
+    def __init__(self, data_dir="data/WN18RR/", create_inverse_triples=True):
+        self.create_inverse_triples = create_inverse_triples
+
         self.train_data = self.load_data(data_dir, "train")
         self.valid_data = self.load_data(data_dir, "valid")
         self.test_data = self.load_data(data_dir, "test")
         self.data = self.train_data + self.valid_data + self.test_data
+
         self.entities = self.get_entities(self.data)
         self.train_relations = self.get_relations(self.train_data)
         self.valid_relations = self.get_relations(self.valid_data)
@@ -17,7 +20,10 @@ class Data:
         with open("%s%s.txt" % (data_dir, data_type), "r", encoding="utf-8") as f:
             data = f.read().strip().split("\n")
             data = [i.split() for i in data]
-            data += [[i[2], i[1]+"_reverse", i[0]] for i in data]
+            
+            if self.create_inverse_triples:
+                data += [[i[2], i[1]+"_reverse", i[0]] for i in data]
+
         return data
 
     def get_relations(self, data):

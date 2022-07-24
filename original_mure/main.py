@@ -27,6 +27,7 @@ class Experiment:
         num_iterations=500,
         batch_size=128,
         cuda=False,
+        transe_arch=False,
     ):
         self.model = model
         self.learning_rate = learning_rate
@@ -36,6 +37,7 @@ class Experiment:
         self.batch_size = batch_size
         self.cuda = cuda
         self.opt = opt
+        self.transe_arch = transe_arch
 
     def get_data_idxs(self, data):
         data_idxs = [
@@ -183,13 +185,17 @@ class Experiment:
 
         if self.model == "poincare":
             model = MuRP(d, self.dim)
+        elif self.transe_arch:
+            model = MuRE_TransE(
+                d, self.dim, entity_mat=entity_matrix, rel_vec=rel_vec
+            )
         else:
             model = MuRE(
                 d, self.dim, entity_mat=entity_matrix, rel_vec=rel_vec, rel_mat=rel_mat
             )
         param_names = [name for name, _ in model.named_parameters()]
         
-        if (self.opt == "Adam") and (self.model is not "poincare"):
+        if (self.opt == "Adam") and (self.model != "poincare"):
             opt = Adam(model.parameters(), lr=self.learning_rate)
         else:
             opt = RiemannianSGD(
@@ -199,7 +205,7 @@ class Experiment:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
 
-        er_vocab = self.get_er_vocab(train_data_idxs)
+        # er_vocab = self.get_er_vocab(train_data_idxs)
 
         print("Starting training...")
         for it in range(1, self.num_iterations + 1):
@@ -383,6 +389,16 @@ if __name__ == "__main__":
         action="store_true",
         help="use entity descriptions to init BERT embs",
     )
+    parser.add_argument(
+        "--transe_arch",
+        action="store_true",
+        help="Change MuRE architecture to make it as similar as possible to TransE"
+    )
+    parser.add_argument(
+        "--disable_inverse_triples",
+        action="store_true",
+        help="Change MuRE architecture to make it as similar as possible to TransE"
+    )
 
     args = parser.parse_args()
 
@@ -412,7 +428,11 @@ if __name__ == "__main__":
         args.lr = 50 if dataset == "wn18rr" else 10
     args.dim = 256 if args.init == "bert" else 200
     
-    run_name = f"{args.init}_{args.dim}_OgMuRE_{dataset}_opt_{args.opt}"
+    if not args.transe_arch:
+        run_name = f"{args.init}_{args.dim}_OgMuRE_{dataset}_opt_{args.opt}"
+    else:
+        run_name = f"{args.init}_{args.dim}_OgMuRE_{dataset}_opt_{args.opt}_TransE"
+
     wandb.init(name=run_name, entity="eth_ai_center_kg_project", project="W2V_for_KGs", group=args.wandb_group)
     wandb.config.use_pykeen = False
     wandb.config.update(args)
@@ -424,7 +444,7 @@ if __name__ == "__main__":
     torch.manual_seed(seed)
     if torch.cuda.is_available:
         torch.cuda.manual_seed_all(seed)
-    d = Data(data_dir=data_dir)
+    d = Data(data_dir=data_dir, create_inverse_triples=not args.disable_inverse_triples)
     experiment = Experiment(
         learning_rate=args.lr,
         batch_size=args.batch_size,
@@ -433,6 +453,7 @@ if __name__ == "__main__":
         cuda=args.cuda,
         nneg=args.nneg,
         model=args.model,
-        opt=args.opt
+        opt=args.opt,
+        transe_arch=args.transe_arch
     )
     experiment.train_and_eval()

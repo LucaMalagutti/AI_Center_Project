@@ -90,3 +90,37 @@ class MuRE(torch.nn.Module):
         sqdist = torch.sum(torch.pow(u_W - (v+rv), 2), dim=-1)
         return -sqdist + self.bs[u_idx] + self.bo[v_idx] 
 
+
+class MuRE_TransE(torch.nn.Module):
+    def __init__(self, d, dim, entity_mat=None, rel_vec=None):
+        super(MuRE_TransE, self).__init__()
+        print("Initializing Mure_TransE model...")
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.E = torch.nn.Embedding(len(d.entities), dim, padding_idx=0)
+        if entity_mat is not None:
+            self.E.weight.data = self.E.weight.data.double()
+            self.E.weight.data = entity_mat.double()
+            self.E.to(device)
+        else:
+            self.E.weight.data = self.E.weight.data.double()
+            self.E.weight.data = (torch.randn((len(d.entities), dim), dtype=torch.double, device=device))
+        
+        self.rv = torch.nn.Embedding(len(d.relations), dim, padding_idx=0)
+        if rel_vec is not None:
+            self.rv.weight.data = rel_vec.repeat(2,1)
+            self.rv.to(device)
+        else:
+            self.rv.weight.data = self.rv.weight.data.double()
+            self.rv.weight.data = (torch.randn((len(d.relations), dim), dtype=torch.double, device=device))
+
+        self.loss = torch.nn.BCEWithLogitsLoss()
+       
+    def forward(self, u_idx, r_idx, v_idx):
+        u = self.E.weight[u_idx]
+        v = self.E.weight[v_idx]
+        rv = self.rv.weight[r_idx]
+        
+        sqdist = torch.sum(torch.pow(u - (v+rv), 2), dim=-1)
+        return -sqdist
