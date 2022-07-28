@@ -4,16 +4,25 @@ from utils import *
 
 
 class MuRP(torch.nn.Module):
-    def __init__(self, d, dim):
+    def __init__(self, d, dim, entity_mat=None):
         super(MuRP, self).__init__()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         self.Eh = torch.nn.Embedding(len(d.entities), dim, padding_idx=0)
-        self.Eh.weight.data = (1e-3 * torch.randn((len(d.entities), dim), dtype=torch.double, device="cuda"))
+        if entity_mat is not None:
+            entity_mat = entity_mat.double()
+            self.Eh.weight.data = self.Eh.weight.data.double()
+            self.Eh.weight.data = 1e-3 * entity_mat
+            self.Eh.to(device)
+        else:
+            self.Eh.weight.data = (1e-3 * torch.randn((len(d.entities), dim), dtype=torch.double, device=device))
+
         self.rvh = torch.nn.Embedding(len(d.relations), dim, padding_idx=0)
-        self.rvh.weight.data = (1e-3 * torch.randn((len(d.relations), dim), dtype=torch.double, device="cuda"))
+        self.rvh.weight.data = (1e-3 * torch.randn((len(d.relations), dim), dtype=torch.double, device=device))
         self.Wu = torch.nn.Parameter(torch.tensor(np.random.uniform(-1, 1, (len(d.relations), 
-                                        dim)), dtype=torch.double, requires_grad=True, device="cuda"))
-        self.bs = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device="cuda"))
-        self.bo = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device="cuda"))
+                                        dim)), dtype=torch.double, requires_grad=True, device=device))
+        self.bs = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device=device))
+        self.bo = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device=device))
         self.loss = torch.nn.BCEWithLogitsLoss()
 
     def forward(self, u_idx, r_idx, v_idx):

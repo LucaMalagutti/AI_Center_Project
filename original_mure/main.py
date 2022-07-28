@@ -184,7 +184,7 @@ class Experiment:
         print("Number of training data points: %d" % len(train_data_idxs))
 
         if self.model == "poincare":
-            model = MuRP(d, self.dim)
+            model = MuRP(d, self.dim, entity_mat=entity_matrix)
         elif self.transe_arch:
             model = MuRE_TransE(
                 d, self.dim, entity_mat=entity_matrix, rel_vec=rel_vec
@@ -325,6 +325,13 @@ if __name__ == "__main__":
         help="Random seed for the pipeline",
     )
     parser.add_argument(
+        "--dim",
+        type=int,
+        default=200,
+        nargs="?",
+        help="Embedding size",
+    )
+    parser.add_argument(
         "--vectors_dir",
         type=str,
         default="word_vectors",
@@ -426,7 +433,6 @@ if __name__ == "__main__":
     dataset = dataset.lower()
     if args.lr is None:
         args.lr = 50 if dataset == "wn18rr" else 10
-    args.dim = 256 if args.init == "bert" else 200
     
     if not args.transe_arch:
         run_name = f"{args.init}_{args.dim}_OgMuRE_{dataset}_opt_{args.opt}"
