@@ -101,7 +101,7 @@ class MuRE(torch.nn.Module):
 
 
 class MuRE_TransE(torch.nn.Module):
-    def __init__(self, d, dim, entity_mat=None, rel_vec=None):
+    def __init__(self, d, dim, entity_mat=None, rel_vec=None, transe_loss=False):
         super(MuRE_TransE, self).__init__()
         print("Initializing Mure_TransE model...")
 
@@ -124,7 +124,10 @@ class MuRE_TransE(torch.nn.Module):
             self.rv.weight.data = self.rv.weight.data.double()
             self.rv.weight.data = (torch.randn((len(d.relations), dim), dtype=torch.double, device=device))
 
-        self.loss = torch.nn.BCEWithLogitsLoss()
+        if transe_loss:
+            self.loss = torch.nn.MarginRankingLoss(margin=5)
+        else:
+            self.loss = torch.nn.BCEWithLogitsLoss()
        
     def forward(self, u_idx, r_idx, v_idx):
         u = self.E.weight[u_idx]

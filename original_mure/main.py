@@ -28,6 +28,7 @@ class Experiment:
         batch_size=128,
         cuda=False,
         transe_arch=False,
+        transe_loss=False
     ):
         self.model = model
         self.learning_rate = learning_rate
@@ -38,6 +39,7 @@ class Experiment:
         self.cuda = cuda
         self.opt = opt
         self.transe_arch = transe_arch
+        self.transe_loss = transe_loss
 
     def get_data_idxs(self, data):
         data_idxs = [
@@ -187,7 +189,7 @@ class Experiment:
             model = MuRP(d, self.dim, entity_mat=entity_matrix)
         elif self.transe_arch:
             model = MuRE_TransE(
-                d, self.dim, entity_mat=entity_matrix, rel_vec=rel_vec
+                d, self.dim, entity_mat=entity_matrix, rel_vec=rel_vec, transe_loss=self.transe_loss,
             )
         else:
             model = MuRE(
@@ -247,8 +249,21 @@ class Experiment:
                 e2_idx = e2_idx.to(device)
                 targets = targets.to(device)
 
-                predictions = model.forward(e1_idx, r_idx, e2_idx)
-                loss = model.loss(predictions.cpu(), targets.cpu())
+                if self.transe_loss:
+                    pos_predictions = model.forward(
+                        e1_idx[:, :1], r_idx[:, :1], e2_idx[:, :1]
+                    )
+                    neg_predictions = model.forward(
+                        e1_idx[:, 1:], r_idx[:, 1:], e2_idx[:, 1:]
+                    )
+                    loss = model.loss(
+                        pos_predictions.cpu(),
+                        neg_predictions.cpu(),
+                        targets[:, :1].cpu(),
+                    )
+                else:
+                    predictions = model.forward(e1_idx, r_idx, e2_idx)
+                    loss = model.loss(predictions.cpu(), targets.cpu())
                 loss.backward()
                 opt.step()
                 losses.append(loss.item())
@@ -402,6 +417,11 @@ if __name__ == "__main__":
         help="Change MuRE architecture to make it as similar as possible to TransE"
     )
     parser.add_argument(
+        "--transe_loss",
+        action="store_true",
+        help="Change MuRE loss to make it as similar as possible to TransE",
+    )
+    parser.add_argument(
         "--disable_inverse_triples",
         action="store_true",
         help="Change MuRE architecture to make it as similar as possible to TransE"
@@ -434,10 +454,21 @@ if __name__ == "__main__":
     if args.lr is None:
         args.lr = 50 if dataset == "wn18rr" else 10
     
-    if not args.transe_arch:
-        run_name = f"{args.init}_{args.dim}_OgMuRE_{dataset}_opt_{args.opt}"
+    if args.model == "euclidian":
+        model_run_name = "OgMuRE"
+    elif args.model == "poincare":
+        model_run_name = "OgMuRP"
     else:
-        run_name = f"{args.init}_{args.dim}_OgMuRE_{dataset}_opt_{args.opt}_TransE"
+        pass
+    
+    if not args.transe_arch:
+        run_name = f"{args.init}_{args.dim}_{model_run_name}_{dataset}_opt_{args.opt}"
+    else:
+        run_name = f"{args.init}_{args.dim}_{model_run_name}_{dataset}_opt_{args.opt}_TransE"
+        if args.disable_inverse_triples:
+            run_name += f"_NoInvT"
+        if args.nneg < 50:
+            run_name += f"_nneg_{args.nneg}"
 
     wandb.init(name=run_name, entity="eth_ai_center_kg_project", project="W2V_for_KGs", group=args.wandb_group)
     wandb.config.use_pykeen = False
@@ -460,6 +491,7 @@ if __name__ == "__main__":
         nneg=args.nneg,
         model=args.model,
         opt=args.opt,
-        transe_arch=args.transe_arch
+        transe_arch=args.transe_arch,
+        transe_loss=args.transe_loss,
     )
     experiment.train_and_eval()
