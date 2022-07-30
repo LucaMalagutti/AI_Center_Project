@@ -54,7 +54,7 @@ class MuRP(torch.nn.Module):
 
 
 class MuRE(torch.nn.Module):
-    def __init__(self, d, dim, entity_mat=None, rel_vec=None, rel_mat=None):
+    def __init__(self, d, dim, entity_mat=None, rel_vec=None, rel_mat=None, mult_factor=1e-3):
         super(MuRE, self).__init__()
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -62,11 +62,11 @@ class MuRE(torch.nn.Module):
         if entity_mat is not None:
             entity_mat = entity_mat.double()
             self.E.weight.data = self.E.weight.data.double()
-            self.E.weight.data = 1e-3 * entity_mat
+            self.E.weight.data = mult_factor * entity_mat
             self.E.to(device)
         else:
             self.E.weight.data = self.E.weight.data.double()
-            self.E.weight.data = (1e-3 * torch.randn((len(d.entities), dim), dtype=torch.double, device=device))
+            self.E.weight.data = (mult_factor * torch.randn((len(d.entities), dim), dtype=torch.double, device=device))
         
         if rel_mat is not None:
             self.Wu = torch.nn.Parameter(rel_mat.repeat(2,1))
@@ -82,7 +82,7 @@ class MuRE(torch.nn.Module):
             self.rv.to(device)
         else:
             self.rv.weight.data = self.rv.weight.data.double()
-            self.rv.weight.data = (1e-3 * torch.randn((len(d.relations), dim), dtype=torch.double, device=device))
+            self.rv.weight.data = (mult_factor * torch.randn((len(d.relations), dim), dtype=torch.double, device=device))
 
         self.bs = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device=device))
         self.bo = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device=device))

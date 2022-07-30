@@ -28,7 +28,8 @@ class Experiment:
         batch_size=128,
         cuda=False,
         transe_arch=False,
-        transe_loss=False
+        transe_loss=False,
+        mult_factor=None
     ):
         self.model = model
         self.learning_rate = learning_rate
@@ -40,6 +41,7 @@ class Experiment:
         self.opt = opt
         self.transe_arch = transe_arch
         self.transe_loss = transe_loss
+        self.mult_factor = mult_factor
 
     def get_data_idxs(self, data):
         data_idxs = [
@@ -193,7 +195,7 @@ class Experiment:
             )
         else:
             model = MuRE(
-                d, self.dim, entity_mat=entity_matrix, rel_vec=rel_vec, rel_mat=rel_mat
+                d, self.dim, entity_mat=entity_matrix, rel_vec=rel_vec, rel_mat=rel_mat, mult_factor=self.mult_factor
             )
         param_names = [name for name, _ in model.named_parameters()]
         
@@ -417,6 +419,13 @@ if __name__ == "__main__":
         help="Change MuRE architecture to make it as similar as possible to TransE"
     )
     parser.add_argument(
+        "--mult_factor",
+        type=float,
+        default=1e-3,
+        nargs="?",
+        help="Embedding size",
+    )
+    parser.add_argument(
         "--transe_loss",
         action="store_true",
         help="Change MuRE loss to make it as similar as possible to TransE",
@@ -461,14 +470,14 @@ if __name__ == "__main__":
     else:
         pass
     
-    if not args.transe_arch:
-        run_name = f"{args.init}_{args.dim}_{model_run_name}_{dataset}_opt_{args.opt}"
-    else:
+    run_name = f"{args.init}_{args.dim}_{model_run_name}_{dataset}_opt_{args.opt}"
+    
+    if args.transe_arch:
         run_name = f"{args.init}_{args.dim}_{model_run_name}_{dataset}_opt_{args.opt}_TransE"
-        if args.disable_inverse_triples:
-            run_name += f"_NoInvT"
-        if args.nneg < 50:
-            run_name += f"_nneg_{args.nneg}"
+    if args.disable_inverse_triples:
+        run_name += f"_NoInvT"
+    if args.nneg < 50:
+        run_name += f"_nneg_{args.nneg}"
 
     wandb.init(name=run_name, entity="eth_ai_center_kg_project", project="W2V_for_KGs", group=args.wandb_group)
     wandb.config.use_pykeen = False
@@ -493,5 +502,6 @@ if __name__ == "__main__":
         opt=args.opt,
         transe_arch=args.transe_arch,
         transe_loss=args.transe_loss,
+        mult_factor=args.mult_factor
     )
     experiment.train_and_eval()
