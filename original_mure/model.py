@@ -101,20 +101,40 @@ class MuRE(torch.nn.Module):
 
 
 class MuRE_TransE(torch.nn.Module):
-    def __init__(self, d, dim, entity_mat=None, rel_vec=None, transe_loss=False):
+    def __init__(self, 
+                 d, 
+                 dim, 
+                 entity_mat=None, 
+                 rel_vec=None, 
+                 rel_mat=None, 
+                 transe_loss=False, 
+                 mult_factor=1e-3, 
+                 transe_enable_bias=False, 
+                 transe_enable_mtx=False):
         super(MuRE_TransE, self).__init__()
         print("Initializing Mure_TransE model...")
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        self.transe_enable_bias = transe_enable_bias
+        self.transe_enable_mtx = transe_enable_mtx
+        
         self.E = torch.nn.Embedding(len(d.entities), dim, padding_idx=0)
         if entity_mat is not None:
             self.E.weight.data = self.E.weight.data.double()
-            self.E.weight.data = entity_mat.double()
+            self.E.weight.data = mult_factor * entity_mat.double()
             self.E.to(device)
         else:
             self.E.weight.data = self.E.weight.data.double()
-            self.E.weight.data = (torch.randn((len(d.entities), dim), dtype=torch.double, device=device))
+            self.E.weight.data = (mult_factor * torch.randn((len(d.entities), dim), dtype=torch.double, device=device))
+            
+        if rel_mat is not None:
+            self.Wu = torch.nn.Parameter(rel_mat.repeat(2,1))
+            self.Wu.requires_grad = True
+            self.Wu.to(device)
+        else:
+            self.Wu = torch.nn.Parameter(torch.tensor(np.random.uniform(-1, 1, (len(d.relations), 
+                                            dim)), dtype=torch.double, requires_grad=True, device=device))
         
         self.rv = torch.nn.Embedding(len(d.relations), dim, padding_idx=0)
         if rel_vec is not None:
@@ -122,17 +142,30 @@ class MuRE_TransE(torch.nn.Module):
             self.rv.to(device)
         else:
             self.rv.weight.data = self.rv.weight.data.double()
-            self.rv.weight.data = (torch.randn((len(d.relations), dim), dtype=torch.double, device=device))
+            self.rv.weight.data = (mult_factor * torch.randn((len(d.relations), dim), dtype=torch.double, device=device))
 
         if transe_loss:
             self.loss = torch.nn.MarginRankingLoss(margin=5)
         else:
             self.loss = torch.nn.BCEWithLogitsLoss()
+            
+        self.bs = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device=device))
+        self.bo = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device=device))
+        self.loss = torch.nn.BCEWithLogitsLoss()
        
     def forward(self, u_idx, r_idx, v_idx):
         u = self.E.weight[u_idx]
         v = self.E.weight[v_idx]
+        Ru = self.Wu[r_idx]
         rv = self.rv.weight[r_idx]
         
-        sqdist = torch.sum(torch.pow(u - (v+rv), 2), dim=-1)
-        return -sqdist
+        if self.transe_enable_mtx:
+            u_W = u * Ru
+            sqdist = torch.sum(torch.pow(u_W - (v+rv), 2), dim=-1)
+        else:
+            sqdist = torch.sum(torch.pow(u - (v+rv), 2), dim=-1)
+            
+        if self.transe_enable_bias:
+            return -sqdist + self.bs[u_idx] + self.bo[v_idx]
+        else:
+            return -sqdist

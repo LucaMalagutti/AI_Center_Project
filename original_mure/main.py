@@ -29,7 +29,9 @@ class Experiment:
         cuda=False,
         transe_arch=False,
         transe_loss=False,
-        mult_factor=None
+        mult_factor=None,
+        transe_enable_bias=False,
+        transe_enable_mtx=False,
     ):
         self.model = model
         self.learning_rate = learning_rate
@@ -42,6 +44,8 @@ class Experiment:
         self.transe_arch = transe_arch
         self.transe_loss = transe_loss
         self.mult_factor = mult_factor
+        self.transe_enable_bias = transe_enable_bias
+        self.transe_enable_mtx = transe_enable_mtx
 
     def get_data_idxs(self, data):
         data_idxs = [
@@ -191,11 +195,23 @@ class Experiment:
             model = MuRP(d, self.dim, entity_mat=entity_matrix)
         elif self.transe_arch:
             model = MuRE_TransE(
-                d, self.dim, entity_mat=entity_matrix, rel_vec=rel_vec, transe_loss=self.transe_loss,
+                d, 
+                self.dim, 
+                entity_mat=entity_matrix, 
+                rel_vec=rel_vec, 
+                transe_loss=self.transe_loss, 
+                mult_factor=self.mult_factor, 
+                transe_enable_bias=self.transe_enable_bias,
+                transe_enable_mtx=self.transe_enable_mtx
             )
         else:
             model = MuRE(
-                d, self.dim, entity_mat=entity_matrix, rel_vec=rel_vec, rel_mat=rel_mat, mult_factor=self.mult_factor
+                d, 
+                self.dim, 
+                entity_mat=entity_matrix, 
+                rel_vec=rel_vec, 
+                rel_mat=rel_mat,
+                mult_factor=self.mult_factor
             )
         param_names = [name for name, _ in model.named_parameters()]
         
@@ -419,6 +435,16 @@ if __name__ == "__main__":
         help="Change MuRE architecture to make it as similar as possible to TransE"
     )
     parser.add_argument(
+        "--transe_enable_bias",
+        action="store_true",
+        help="Change MuRE architecture to make it as similar as possible to TransE"
+    )
+    parser.add_argument(
+        "--transe_enable_mtx",
+        action="store_true",
+        help="Change MuRE architecture to make it as similar as possible to TransE"
+    )
+    parser.add_argument(
         "--mult_factor",
         type=float,
         default=1e-3,
@@ -478,6 +504,10 @@ if __name__ == "__main__":
         run_name += f"_NoInvT"
     if args.nneg < 50:
         run_name += f"_nneg_{args.nneg}"
+        
+    if args.mult_factor is None:
+        if args.transe_arch:
+            args.mult_factor=1
 
     wandb.init(name=run_name, entity="eth_ai_center_kg_project", project="W2V_for_KGs", group=args.wandb_group)
     wandb.config.use_pykeen = False
@@ -502,6 +532,8 @@ if __name__ == "__main__":
         opt=args.opt,
         transe_arch=args.transe_arch,
         transe_loss=args.transe_loss,
-        mult_factor=args.mult_factor
+        mult_factor=args.mult_factor,
+        transe_enable_bias=args.transe_enable_bias,
+        transe_enable_mtx=args.transe_enable_mtx,
     )
     experiment.train_and_eval()
