@@ -460,7 +460,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--mult_factor",
         type=float,
-        default=1e-3,
+        default=None,
         nargs="?",
         help="Embedding size",
     )
@@ -523,6 +523,8 @@ if __name__ == "__main__":
     if args.mult_factor is None:
         if args.transe_arch:
             args.mult_factor=1
+        else:
+            args.mult_factor=1e-3
 
     wandb.init(name=run_name, entity="eth_ai_center_kg_project", project="W2V_for_KGs", group=args.wandb_group)
     wandb.config.use_pykeen = False
