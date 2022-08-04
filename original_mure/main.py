@@ -294,6 +294,16 @@ class Experiment:
                     print("Test:")
                     self.evaluate(model, d.test_data)
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -431,17 +441,20 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--transe_arch",
-        action="store_true",
+        type=str2bool,
+        default=False,
         help="Change MuRE architecture to make it as similar as possible to TransE"
     )
     parser.add_argument(
         "--transe_enable_bias",
-        action="store_true",
+        type=str2bool,
+        default=False,
         help="Change MuRE architecture to make it as similar as possible to TransE"
     )
     parser.add_argument(
         "--transe_enable_mtx",
-        action="store_true",
+        type=str2bool,
+        default=False,
         help="Change MuRE architecture to make it as similar as possible to TransE"
     )
     parser.add_argument(
@@ -453,12 +466,14 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--transe_loss",
-        action="store_true",
+        type=str2bool,
+        default=False,
         help="Change MuRE loss to make it as similar as possible to TransE",
     )
     parser.add_argument(
         "--disable_inverse_triples",
-        action="store_true",
+        type=str2bool,
+        default=False,
         help="Change MuRE architecture to make it as similar as possible to TransE"
     )
 
