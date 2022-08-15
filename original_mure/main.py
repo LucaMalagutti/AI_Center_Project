@@ -32,6 +32,7 @@ class Experiment:
         mult_factor=None,
         transe_enable_bias=False,
         transe_enable_mtx=False,
+        transe_enable_vec=False,
     ):
         self.model = model
         self.learning_rate = learning_rate
@@ -46,6 +47,7 @@ class Experiment:
         self.mult_factor = mult_factor
         self.transe_enable_bias = transe_enable_bias
         self.transe_enable_mtx = transe_enable_mtx
+        self.transe_enable_vec = transe_enable_vec
 
     def get_data_idxs(self, data):
         data_idxs = [
@@ -202,7 +204,8 @@ class Experiment:
                 transe_loss=self.transe_loss, 
                 mult_factor=self.mult_factor, 
                 transe_enable_bias=self.transe_enable_bias,
-                transe_enable_mtx=self.transe_enable_mtx
+                transe_enable_mtx=self.transe_enable_mtx,
+                transe_enable_vec=self.transe_enable_vec
             )
         else:
             model = MuRE(
@@ -458,6 +461,12 @@ if __name__ == "__main__":
         help="Change MuRE architecture to make it as similar as possible to TransE"
     )
     parser.add_argument(
+        "--transe_enable_vec",
+        type=str2bool,
+        default=False,
+        help="Change MuRE architecture to only use multiplicative mechanisms"
+    )
+    parser.add_argument(
         "--mult_factor",
         type=float,
         default=None,
@@ -552,5 +561,6 @@ if __name__ == "__main__":
         mult_factor=args.mult_factor,
         transe_enable_bias=args.transe_enable_bias,
         transe_enable_mtx=args.transe_enable_mtx,
+        transe_enable_vec=args.transe_enable_vec,
     )
     experiment.train_and_eval()

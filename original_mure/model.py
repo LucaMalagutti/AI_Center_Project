@@ -110,7 +110,8 @@ class MuRE_TransE(torch.nn.Module):
                  transe_loss=False, 
                  mult_factor=1e-3, 
                  transe_enable_bias=False, 
-                 transe_enable_mtx=False):
+                 transe_enable_mtx=False,
+                 transe_enable_vec=False):
         super(MuRE_TransE, self).__init__()
         print("Initializing Mure_TransE model...")
 
@@ -118,6 +119,7 @@ class MuRE_TransE(torch.nn.Module):
 
         self.transe_enable_bias = transe_enable_bias
         self.transe_enable_mtx = transe_enable_mtx
+        self.transe_enable_vec = transe_enable_vec
         
         self.E = torch.nn.Embedding(len(d.entities), dim, padding_idx=0)
         if entity_mat is not None:
@@ -151,13 +153,18 @@ class MuRE_TransE(torch.nn.Module):
             
         self.bs = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device=device))
         self.bo = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device=device))
-        self.loss = torch.nn.BCEWithLogitsLoss()
        
     def forward(self, u_idx, r_idx, v_idx):
         u = self.E.weight[u_idx]
         v = self.E.weight[v_idx]
         Ru = self.Wu[r_idx]
         rv = self.rv.weight[r_idx]
+        
+        if not self.transe_enable_vec:
+            rv = torch.zeros(rv.shape, 
+                             dtype=torch.double, 
+                             device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+            
         
         if self.transe_enable_mtx:
             u_W = u * Ru
