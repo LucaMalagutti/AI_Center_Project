@@ -8,6 +8,7 @@ from model import *
 from rsgd import *
 from torch.optim import Adam 
 import argparse
+from sklearn.preprocessing import normalize
 import sys
 import wandb
 
@@ -135,6 +136,10 @@ class Experiment:
                 mure_init=True,
             )
 
+            if args.normalize_entity_mtx:
+                entity_matrix = normalize(entity_matrix, axis=1)
+                entity_matrix = torch.from_numpy(entity_matrix.astype(np.float32))
+
             new_entity_matrix = torch.tensor(
                 np.random.uniform(-1, 1, (len(d.entities), self.dim))
             )
@@ -152,11 +157,19 @@ class Experiment:
                 weigh_mean=False,
                 mure_init=True,
             )
-            new_entity_matrix = torch.zeros(len(d.entities), 256)
+
+            if args.normalize_entity_mtx:
+                entity_matrix = normalize(entity_matrix, axis=1)
+                entity_matrix = torch.from_numpy(entity_matrix.astype(np.float32))
+
+            new_entity_matrix = torch.tensor(
+                np.random.uniform(-1, 1, (len(d.entities), self.dim))
+            )
             for entity_id in entity_dict:
                 entity_vector = entity_matrix[entity_dict[entity_id], :]
                 new_entity_matrix[self.entity_idxs[entity_id], :] = entity_vector
             entity_matrix = new_entity_matrix
+                
         else:
             entity_matrix = None
         if args.relation_init == "glove":
@@ -484,6 +497,12 @@ if __name__ == "__main__":
         type=str2bool,
         default=False,
         help="Change MuRE architecture to make it as similar as possible to TransE"
+    )
+    parser.add_argument(
+        "--normalize_entity_mtx",
+        type=str2bool,
+        default=False,
+        help="Normalize every entity vector to L2-norm=1"
     )
 
     args = parser.parse_args()
