@@ -6,7 +6,7 @@ from collections import defaultdict
 from load_data import Data
 from model import *
 from rsgd import *
-from torch.optim import Adam 
+from torch.optim import Adam
 import argparse
 from sklearn.preprocessing import normalize
 import sys
@@ -34,7 +34,7 @@ class Experiment:
         transe_enable_bias=False,
         transe_enable_mtx=False,
         transe_enable_vec=False,
-        distmult_score_function=False
+        distmult_score_function=False,
     ):
         self.model = model
         self.learning_rate = learning_rate
@@ -115,16 +115,17 @@ class Experiment:
         print("Hits @1: {0}".format(np.mean(hits[0])))
         print("Mean rank: {0}".format(np.mean(ranks)))
         print("Mean reciprocal rank: {0}".format(np.mean(1.0 / np.array(ranks))))
-        wandb.log({
-        'both.realistic.hits_at_10': np.mean(hits[9]),
-        'both.realistic.hits_at_5': np.mean(hits[4]),
-        'both.realistic.hits_at_3': np.mean(hits[2]),
-        'both.realistic.hits_at_1': np.mean(hits[0]),
-        'both.realistic.adjusted_inverse_harmonic_mean_rank': np.mean(ranks),
-        'Mean reciprocal rank': np.mean(1./np.array(ranks))
-        })
-        
-        
+        wandb.log(
+            {
+                "both.realistic.hits_at_10": np.mean(hits[9]),
+                "both.realistic.hits_at_5": np.mean(hits[4]),
+                "both.realistic.hits_at_3": np.mean(hits[2]),
+                "both.realistic.hits_at_1": np.mean(hits[0]),
+                "both.realistic.adjusted_inverse_harmonic_mean_rank": np.mean(ranks),
+                "Mean reciprocal rank": np.mean(1.0 / np.array(ranks)),
+            }
+        )
+
     def train_and_eval(self):
         print("Training the %s model..." % self.model)
         self.entity_idxs = {d.entities[i]: i for i in range(len(d.entities))}
@@ -171,7 +172,7 @@ class Experiment:
                 entity_vector = entity_matrix[entity_dict[entity_id], :]
                 new_entity_matrix[self.entity_idxs[entity_id], :] = entity_vector
             entity_matrix = new_entity_matrix
-                
+
         else:
             entity_matrix = None
         if args.relation_init == "glove":
@@ -212,28 +213,28 @@ class Experiment:
             model = MuRP(d, self.dim, entity_mat=entity_matrix)
         elif self.transe_arch:
             model = MuRE_TransE(
-                d, 
-                self.dim, 
-                entity_mat=entity_matrix, 
-                rel_vec=rel_vec, 
-                transe_loss=self.transe_loss, 
-                mult_factor=self.mult_factor, 
+                d,
+                self.dim,
+                entity_mat=entity_matrix,
+                rel_vec=rel_vec,
+                transe_loss=self.transe_loss,
+                mult_factor=self.mult_factor,
                 transe_enable_bias=self.transe_enable_bias,
                 transe_enable_mtx=self.transe_enable_mtx,
                 transe_enable_vec=self.transe_enable_vec,
-                distmult_score_function=self.distmult_score_function
+                distmult_score_function=self.distmult_score_function,
             )
         else:
             model = MuRE(
-                d, 
-                self.dim, 
-                entity_mat=entity_matrix, 
-                rel_vec=rel_vec, 
+                d,
+                self.dim,
+                entity_mat=entity_matrix,
+                rel_vec=rel_vec,
                 rel_mat=rel_mat,
-                mult_factor=self.mult_factor
+                mult_factor=self.mult_factor,
             )
         param_names = [name for name, _ in model.named_parameters()]
-        
+
         if (self.opt == "Adam") and (self.model != "poincare"):
             opt = Adam(model.parameters(), lr=self.learning_rate)
         else:
@@ -313,15 +314,16 @@ class Experiment:
                     print("Test:")
                     self.evaluate(model, d.test_data)
 
+
 def str2bool(v):
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 if __name__ == "__main__":
@@ -405,7 +407,7 @@ if __name__ == "__main__":
         type=float,
         default=None,
         nargs="?",
-        help="training learning rate",  
+        help="training learning rate",
     )
     parser.add_argument(
         "--wandb_group",
@@ -462,25 +464,25 @@ if __name__ == "__main__":
         "--transe_arch",
         type=str2bool,
         default=False,
-        help="Change MuRE architecture to make it as similar as possible to TransE"
+        help="Change MuRE architecture to make it as similar as possible to TransE",
     )
     parser.add_argument(
         "--transe_enable_bias",
         type=str2bool,
         default=False,
-        help="Change MuRE architecture to make it as similar as possible to TransE"
+        help="Change MuRE architecture to make it as similar as possible to TransE",
     )
     parser.add_argument(
         "--transe_enable_mtx",
         type=str2bool,
         default=False,
-        help="Change MuRE architecture to make it as similar as possible to TransE"
+        help="Change MuRE architecture to make it as similar as possible to TransE",
     )
     parser.add_argument(
         "--transe_enable_vec",
         type=str2bool,
         default=False,
-        help="Change MuRE architecture to only use multiplicative mechanisms"
+        help="Change MuRE architecture to only use multiplicative mechanisms",
     )
     parser.add_argument(
         "--mult_factor",
@@ -499,19 +501,19 @@ if __name__ == "__main__":
         "--disable_inverse_triples",
         type=str2bool,
         default=False,
-        help="Change MuRE architecture to make it as similar as possible to TransE"
+        help="Change MuRE architecture to make it as similar as possible to TransE",
     )
     parser.add_argument(
         "--normalize_entity_mtx",
         type=str2bool,
         default=False,
-        help="Normalize every entity vector to L2-norm=1"
+        help="Normalize every entity vector to L2-norm=1",
     )
     parser.add_argument(
         "--distmult_score_function",
         type=str2bool,
         default=False,
-        help="Use different score function to compare with DistMult"
+        help="Use different score function to compare with DistMult",
     )
 
     args = parser.parse_args()
@@ -540,38 +542,44 @@ if __name__ == "__main__":
     dataset = dataset.lower()
     if args.lr is None:
         args.lr = 50 if dataset == "wn18rr" else 10
-    
+
     if args.model == "euclidian":
         model_run_name = "OgMuRE"
     elif args.model == "poincare":
         model_run_name = "OgMuRP"
     else:
         pass
-    
+
     run_name = f"{args.init}_{args.dim}_{model_run_name}_{dataset}_opt_{args.opt}"
-    
+
     if args.transe_arch:
-        run_name = f"{args.init}_{args.dim}_{model_run_name}_{dataset}_opt_{args.opt}_TransE"
+        run_name = (
+            f"{args.init}_{args.dim}_{model_run_name}_{dataset}_opt_{args.opt}_TransE"
+        )
     if args.disable_inverse_triples:
         run_name += f"_NoInvT"
     if args.nneg < 50:
         run_name += f"_nneg_{args.nneg}"
-        
+
     if args.distmult_score_function:
         args.transe_arch = True
         args.transe_enable_mtx = True
         args.transe_enable_vec = False
         args.transe_enable_bias = False
-        
+
     if args.mult_factor is None:
         if args.transe_arch:
-            args.mult_factor=1
+            args.mult_factor = 1
         else:
-            args.mult_factor=1e-3
-            
-    
+            args.mult_factor = 1e-3
 
-    wandb.init(name=run_name, entity="eth_ai_center_kg_project", project="W2V_for_KGs", group=args.wandb_group)
+    wandb.init(
+        name=run_name,
+        entity="eth_ai_center_kg_project",
+        project="W2V_for_KGs",
+        group=args.wandb_group,
+        mode="disabled",
+    )
     wandb.config.use_pykeen = False
     wandb.config.update(args)
 
@@ -598,6 +606,6 @@ if __name__ == "__main__":
         transe_enable_bias=args.transe_enable_bias,
         transe_enable_mtx=args.transe_enable_mtx,
         transe_enable_vec=args.transe_enable_vec,
-        distmult_score_function=args.distmult_score_function
+        distmult_score_function=args.distmult_score_function,
     )
     experiment.train_and_eval()
