@@ -34,6 +34,7 @@ class Experiment:
         transe_enable_bias=False,
         transe_enable_mtx=False,
         transe_enable_vec=False,
+        distmult_score_function=False
     ):
         self.model = model
         self.learning_rate = learning_rate
@@ -49,6 +50,7 @@ class Experiment:
         self.transe_enable_bias = transe_enable_bias
         self.transe_enable_mtx = transe_enable_mtx
         self.transe_enable_vec = transe_enable_vec
+        self.distmult_score_function = distmult_score_function
 
     def get_data_idxs(self, data):
         data_idxs = [
@@ -218,7 +220,8 @@ class Experiment:
                 mult_factor=self.mult_factor, 
                 transe_enable_bias=self.transe_enable_bias,
                 transe_enable_mtx=self.transe_enable_mtx,
-                transe_enable_vec=self.transe_enable_vec
+                transe_enable_vec=self.transe_enable_vec,
+                distmult_score_function=self.distmult_score_function
             )
         else:
             model = MuRE(
@@ -504,6 +507,12 @@ if __name__ == "__main__":
         default=False,
         help="Normalize every entity vector to L2-norm=1"
     )
+    parser.add_argument(
+        "--distmult_score_function",
+        type=str2bool,
+        default=False,
+        help="Use different score function to compare with DistMult"
+    )
 
     args = parser.parse_args()
 
@@ -548,11 +557,19 @@ if __name__ == "__main__":
     if args.nneg < 50:
         run_name += f"_nneg_{args.nneg}"
         
+    if args.distmult_score_function:
+        args.transe_arch = True
+        args.transe_enable_mtx = True
+        args.transe_enable_vec = False
+        args.transe_enable_bias = False
+        
     if args.mult_factor is None:
         if args.transe_arch:
             args.mult_factor=1
         else:
             args.mult_factor=1e-3
+            
+    
 
     wandb.init(name=run_name, entity="eth_ai_center_kg_project", project="W2V_for_KGs", group=args.wandb_group)
     wandb.config.use_pykeen = False
@@ -581,5 +598,6 @@ if __name__ == "__main__":
         transe_enable_bias=args.transe_enable_bias,
         transe_enable_mtx=args.transe_enable_mtx,
         transe_enable_vec=args.transe_enable_vec,
+        distmult_score_function=args.distmult_score_function
     )
     experiment.train_and_eval()

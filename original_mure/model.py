@@ -111,7 +111,8 @@ class MuRE_TransE(torch.nn.Module):
                  mult_factor=1e-3, 
                  transe_enable_bias=False, 
                  transe_enable_mtx=False,
-                 transe_enable_vec=False):
+                 transe_enable_vec=False,
+                 distmult_score_function=False):
         super(MuRE_TransE, self).__init__()
         print("Initializing Mure_TransE model...")
 
@@ -120,6 +121,7 @@ class MuRE_TransE(torch.nn.Module):
         self.transe_enable_bias = transe_enable_bias
         self.transe_enable_mtx = transe_enable_mtx
         self.transe_enable_vec = transe_enable_vec
+        self.distmult_score_function = distmult_score_function
         
         self.E = torch.nn.Embedding(len(d.entities), dim, padding_idx=0)
         if entity_mat is not None:
@@ -174,5 +176,22 @@ class MuRE_TransE(torch.nn.Module):
             
         if self.transe_enable_bias:
             return -sqdist + self.bs[u_idx] + self.bo[v_idx]
+        if self.distmult_score_function:
+            #print(sqdist.shape)
+            #print(Ru.shape)
+            #print(u.shape)
+            #print(torch.transpose(v, 1,2).shape)
+            u_W = u * Ru
+            if len(u_W.shape) < 3:
+                u_W = torch.unsqueeze(u_W, 0)
+                v = torch.unsqueeze(v, 0)
+                print(u_W.shape)
+                print(torch.transpose(v, 1,2).shape)
+            score_mtx = torch.bmm(u_W, torch.transpose(v, -2,-1))
+            score = torch.diagonal(score_mtx, dim1=-2, dim2=-1)
+            #print(score.shape)
+            #import sys
+            #sys.exit()
+            return score
         else:
             return -sqdist
