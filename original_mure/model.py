@@ -271,6 +271,6 @@ class MuRE_TransE(torch.nn.Module):
             # print(score.shape)
             # import sys
             # sys.exit()
-            return -score
+            return score
         else:
             return -sqdist

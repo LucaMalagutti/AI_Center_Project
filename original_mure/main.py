@@ -578,7 +578,6 @@ if __name__ == "__main__":
         entity="eth_ai_center_kg_project",
         project="W2V_for_KGs",
         group=args.wandb_group,
-        mode="disabled",
     )
     wandb.config.use_pykeen = False
     wandb.config.update(args)
