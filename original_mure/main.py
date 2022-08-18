@@ -32,6 +32,7 @@ class Experiment:
         transe_loss=False,
         mult_factor=None,
         transe_enable_bias=False,
+        transe_bias_mode=None,
         transe_enable_mtx=False,
         transe_enable_vec=False,
         distmult_score_function=False,
@@ -50,6 +51,7 @@ class Experiment:
         self.transe_loss = transe_loss
         self.mult_factor = mult_factor
         self.transe_enable_bias = transe_enable_bias
+        self.transe_bias_mode = transe_bias_mode
         self.transe_enable_mtx = transe_enable_mtx
         self.transe_enable_vec = transe_enable_vec
         self.distmult_score_function = distmult_score_function
@@ -224,6 +226,7 @@ class Experiment:
                 transe_loss=self.transe_loss,
                 mult_factor=self.mult_factor,
                 transe_enable_bias=self.transe_enable_bias,
+                transe_bias_mode=self.transe_bias_mode,
                 transe_enable_mtx=self.transe_enable_mtx,
                 transe_enable_vec=self.transe_enable_vec,
                 distmult_score_function=self.distmult_score_function,

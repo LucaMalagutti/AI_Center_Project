@@ -167,6 +167,7 @@ class MuRE_TransE(torch.nn.Module):
         transe_loss=False,
         mult_factor=1e-3,
         transe_enable_bias=False,
+        transe_bias_mode=None,
         transe_enable_mtx=False,
         transe_enable_vec=False,
         distmult_score_function=False,
@@ -179,6 +180,7 @@ class MuRE_TransE(torch.nn.Module):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.transe_enable_bias = transe_enable_bias
+        self.transe_bias_mode = transe_bias_mode
         self.transe_enable_mtx = transe_enable_mtx
         self.transe_enable_vec = transe_enable_vec
         self.distmult_score_function = distmult_score_function
@@ -255,13 +257,16 @@ class MuRE_TransE(torch.nn.Module):
         else:
             sqdist = torch.sum(torch.pow(u - (v + rv), 2), dim=-1)
 
+        neg_sqdist = -sqdist
+        
         if self.transe_enable_bias:
-            return -sqdist + self.bs[u_idx] + self.bo[v_idx]
+            if "subject" in self.transe_bias_mode:
+                neg_sqdist += self.bs[u_idx]
+            if "object" in self.transe_bias_mode:
+                neg_sqdist += self.bo[v_idx]
+        
+        
         if self.distmult_score_function:
-            # print(sqdist.shape)
-            # print(Ru.shape)
-            # print(u.shape)
-
             u_W = u * Ru
             
             if self.distmult_sqdist:
@@ -272,16 +277,13 @@ class MuRE_TransE(torch.nn.Module):
                     score -= torch.sum(v*v, dim=-1)
             else:
                 score = torch.sum(u_W * v, dim=-1)
-            # if len(u_W.shape) < 3:
-            # u_W = torch.unsqueeze(u_W, 0)
-            # v = torch.unsqueeze(v, 0)
-            # print(u_W.shape)
-            # print(torch.transpose(v, 1, 2).shape)
-            # score_mtx = torch.bmm(u_W, torch.transpose(v, -2, -1))
-            # score = torch.diagonal(score_mtx, dim1=-2, dim2=-1)
-            # print(score.shape)
-            # import sys
-            # sys.exit()
+                
+            if self.transe_enable_bias:
+                if "subject" in self.transe_bias_mode:
+                    score += self.bs[u_idx]
+                if "object" in self.transe_bias_mode:
+                    score += self.bo[v_idx]
+            
             return score
         else:
-            return -sqdist
+            return neg_sqdist
