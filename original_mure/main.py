@@ -35,6 +35,8 @@ class Experiment:
         transe_enable_mtx=False,
         transe_enable_vec=False,
         distmult_score_function=False,
+        distmult_sqdist=False,
+        distmult_sqdist_mode=None,
     ):
         self.model = model
         self.learning_rate = learning_rate
@@ -51,6 +53,8 @@ class Experiment:
         self.transe_enable_mtx = transe_enable_mtx
         self.transe_enable_vec = transe_enable_vec
         self.distmult_score_function = distmult_score_function
+        self.distmult_sqdist = distmult_sqdist
+        self.distmult_sqdist_mode = distmult_sqdist_mode
 
     def get_data_idxs(self, data):
         data_idxs = [
@@ -223,6 +227,8 @@ class Experiment:
                 transe_enable_mtx=self.transe_enable_mtx,
                 transe_enable_vec=self.transe_enable_vec,
                 distmult_score_function=self.distmult_score_function,
+                distmult_sqdist=self.distmult_sqdist,
+                distmult_sqdist_mode=self.distmult_sqdist_mode
             )
         else:
             model = MuRE(
@@ -515,6 +521,18 @@ if __name__ == "__main__":
         default=False,
         help="Use different score function to compare with DistMult",
     )
+    parser.add_argument(
+        "--distmult_sqdist",
+        type=str2bool,
+        default=False,
+        help="Intermediate score function between distmult and MuRE",
+    )
+    parser.add_argument(
+        "--distmult_sqdist_mode",
+        type=str,
+        default=False,
+        help="Specify the terms to keep from the mure norm",
+    )
 
     args = parser.parse_args()
 
@@ -566,6 +584,9 @@ if __name__ == "__main__":
         args.transe_enable_mtx = True
         args.transe_enable_vec = False
         args.transe_enable_bias = False
+    
+    if args.distmult_sqdist and args.distmult_sqdist_mode is None:
+        args.distmult_sqdist_mode = ["subject", "object"]
 
     if args.mult_factor is None:
         if args.transe_arch:
@@ -606,5 +627,7 @@ if __name__ == "__main__":
         transe_enable_mtx=args.transe_enable_mtx,
         transe_enable_vec=args.transe_enable_vec,
         distmult_score_function=args.distmult_score_function,
+        distmult_sqdist=args.distmult_sqdist,
+        distmult_sqdist_mode= args.distmult_sqdist_mode
     )
     experiment.train_and_eval()

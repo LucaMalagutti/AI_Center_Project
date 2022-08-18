@@ -170,6 +170,8 @@ class MuRE_TransE(torch.nn.Module):
         transe_enable_mtx=False,
         transe_enable_vec=False,
         distmult_score_function=False,
+        distmult_sqdist=False,
+        distmult_sqdist_mode=None,
     ):
         super(MuRE_TransE, self).__init__()
         print("Initializing Mure_TransE model...")
@@ -180,6 +182,8 @@ class MuRE_TransE(torch.nn.Module):
         self.transe_enable_mtx = transe_enable_mtx
         self.transe_enable_vec = transe_enable_vec
         self.distmult_score_function = distmult_score_function
+        self.distmult_sqdist = distmult_sqdist
+        self.distmult_sqdist_mode = distmult_sqdist_mode
 
         self.E = torch.nn.Embedding(len(d.entities), dim, padding_idx=0)
         if entity_mat is not None:
@@ -259,8 +263,15 @@ class MuRE_TransE(torch.nn.Module):
             # print(u.shape)
 
             u_W = u * Ru
-
-            score = torch.sum(u_W * v, dim=-1)
+            
+            if self.distmult_sqdist:
+                score = 2*torch.sum(u_W * v, dim=-1)
+                if "subject" in self.distmult_sqdist_mode:
+                    score -= torch.sum(u_W * u_W, dim=-1) 
+                if "object" in self.distmult_sqdist_mode:
+                    score -= torch.sum(v*v, dim=-1)
+            else:
+                score = torch.sum(u_W * v, dim=-1)
             # if len(u_W.shape) < 3:
             # u_W = torch.unsqueeze(u_W, 0)
             # v = torch.unsqueeze(v, 0)
