@@ -482,6 +482,13 @@ if __name__ == "__main__":
         help="Change MuRE architecture to make it as similar as possible to TransE",
     )
     parser.add_argument(
+        "--transe_bias_mode",
+        type=str,
+        nargs="*",
+        default=None,
+        help="Specify the bias terms to include from mure",
+    )
+    parser.add_argument(
         "--transe_enable_mtx",
         type=str2bool,
         default=False,
@@ -533,7 +540,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--distmult_sqdist_mode",
         type=str,
-        default=False,
+        nargs="*",
+        default=None,
         help="Specify the terms to keep from the mure norm",
     )
 
@@ -590,6 +598,9 @@ if __name__ == "__main__":
     
     if args.distmult_sqdist and args.distmult_sqdist_mode is None:
         args.distmult_sqdist_mode = ["subject", "object"]
+        
+    if args.transe_enable_bias and args.transe_bias_mode is None:
+        args.transe_bias_mode = ["subject", "object"]
 
     if args.mult_factor is None:
         if args.transe_arch:
@@ -627,6 +638,7 @@ if __name__ == "__main__":
         transe_loss=args.transe_loss,
         mult_factor=args.mult_factor,
         transe_enable_bias=args.transe_enable_bias,
+        transe_bias_mode=args.transe_bias_mode,
         transe_enable_mtx=args.transe_enable_mtx,
         transe_enable_vec=args.transe_enable_vec,
         distmult_score_function=args.distmult_score_function,
