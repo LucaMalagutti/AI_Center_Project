@@ -594,7 +594,6 @@ if __name__ == "__main__":
         args.transe_arch = True
         args.transe_enable_mtx = True
         args.transe_enable_vec = False
-        args.transe_enable_bias = False
     
     if args.distmult_sqdist and args.distmult_sqdist_mode is None:
         args.distmult_sqdist_mode = ["subject", "object"]
