@@ -11,6 +11,8 @@ import argparse
 from sklearn.preprocessing import normalize
 import sys
 import wandb
+from typing import Union
+
 
 sys.path.insert(0, "..")
 from w2v import get_emb_matrix, get_emb_matrix_relation
@@ -333,6 +335,11 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError("Boolean value expected.")
+    
+def none_or_str(value:str) -> Union[str, None]:
+    if value.lower() == "none":
+        return None
+    return value
 
 
 if __name__ == "__main__":
@@ -483,8 +490,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--transe_bias_mode",
-        type=str,
-        nargs="*",
+        type=none_or_str,
         default=None,
         help="Specify the bias terms to include from mure",
     )
@@ -539,8 +545,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--distmult_sqdist_mode",
-        type=str,
-        nargs="*",
+        type=none_or_str,
         default=None,
         help="Specify the terms to keep from the mure norm",
     )
