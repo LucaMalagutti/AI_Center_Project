@@ -335,11 +335,6 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError("Boolean value expected.")
-    
-def none_or_str(value:str) -> Union[str, None]:
-    if value.lower() == "none":
-        return None
-    return value
 
 
 if __name__ == "__main__":
@@ -490,7 +485,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--transe_bias_mode",
-        type=none_or_str,
+        type=str,
         default=None,
         help="Specify the bias terms to include from mure",
     )
@@ -545,7 +540,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--distmult_sqdist_mode",
-        type=none_or_str,
+        type=str,
         default=None,
         help="Specify the terms to keep from the mure norm",
     )
@@ -600,10 +595,10 @@ if __name__ == "__main__":
         args.transe_enable_mtx = True
         args.transe_enable_vec = False
     
-    if args.distmult_sqdist and args.distmult_sqdist_mode is None:
+    if args.distmult_sqdist and (args.distmult_sqdist_mode == "both"):
         args.distmult_sqdist_mode = ["subject", "object"]
         
-    if args.transe_enable_bias and args.transe_bias_mode is None:
+    if args.transe_enable_bias and (args.transe_bias_mode == "both"):
         args.transe_bias_mode = ["subject", "object"]
 
     if args.mult_factor is None:
