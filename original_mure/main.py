@@ -486,7 +486,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--transe_bias_mode",
         type=str,
-        default=None,
+        default="both",
         help="Specify the bias terms to include from mure",
     )
     parser.add_argument(
@@ -541,7 +541,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--distmult_sqdist_mode",
         type=str,
-        default=None,
+        default="both",
         help="Specify the terms to keep from the mure norm",
     )
 
@@ -594,12 +594,6 @@ if __name__ == "__main__":
         args.transe_arch = True
         args.transe_enable_mtx = True
         args.transe_enable_vec = False
-    
-    if args.distmult_sqdist and (args.distmult_sqdist_mode == "both"):
-        args.distmult_sqdist_mode = ["subject", "object"]
-        
-    if args.transe_enable_bias and (args.transe_bias_mode == "both"):
-        args.transe_bias_mode = ["subject", "object"]
 
     if args.mult_factor is None:
         if args.transe_arch:
@@ -615,6 +609,16 @@ if __name__ == "__main__":
     )
     wandb.config.use_pykeen = False
     wandb.config.update(args)
+    
+    if args.distmult_sqdist and (args.distmult_sqdist_mode == "both"):
+        args.distmult_sqdist_mode = ["subject", "object"]
+        
+    if args.transe_enable_bias and (args.transe_bias_mode == "both"):
+        print("----------------------------")
+        print("----------------------------")
+        print("----------------------------")
+        print("----------------------------")
+        args.transe_bias_mode = ["subject", "object"]
 
     data_dir = "data/%s/" % dataset
     torch.backends.cudnn.deterministic = True
