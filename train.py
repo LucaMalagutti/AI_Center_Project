@@ -7,7 +7,7 @@ import json
 import argparse
 import pathlib
 from typing import Union, List
-import pickle
+from sklearn.preprocessing import normalize
 import torch
 import yaml
 import pdb
@@ -23,6 +23,18 @@ import numpy as np
 
 # Load environment variables from `.env`.
 dotenv.load_dotenv(override=True)
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
 
 def set_all_seeds(seed_num):
     print(f"[ Using seed : {seed_num} ]")
@@ -125,34 +137,52 @@ def get_entity_initializer(
     """Get an Entity embeddings initializer."""
 
     if init == "fasttext":
+        entity_matrix = w2v.get_emb_matrix(
+            f"{vectors_dir}/cc.en.{embedding_dim}.bin",
+            embedding_dim,
+            sub_word=True,
+            dataset_name=dataset_name,
+        )
+
+        if args.normalize_entity_mtx:
+            entity_matrix = normalize(entity_matrix, axis=1)
+            entity_matrix = torch.from_numpy(entity_matrix.astype(np.float32))
+
         entity_initializer = PretrainedInitializer(
-            w2v.get_emb_matrix(
-                f"{vectors_dir}/cc.en.{embedding_dim}.bin",
-                embedding_dim,
-                sub_word=True,
-                dataset_name=dataset_name,
-            )
+            entity_matrix
         )
     elif init == "w2v":
+        entity_matrix = w2v.get_emb_matrix(
+            f"{vectors_dir}/word2vec-google-news-{embedding_dim}.bin",
+            embedding_dim,
+            sub_word=False,
+            dataset_name=dataset_name,
+        )
+
+        if args.normalize_entity_mtx:
+            entity_matrix = normalize(entity_matrix, axis=1)
+            entity_matrix = torch.from_numpy(entity_matrix.astype(np.float32))
+
         entity_initializer = PretrainedInitializer(
-            w2v.get_emb_matrix(
-                f"{vectors_dir}/word2vec-google-news-{embedding_dim}.bin",
-                embedding_dim,
-                sub_word=False,
-                dataset_name=dataset_name,
-            )
+            entity_matrix
         )
     elif init == "glove":
+        entity_matrix = w2v.get_emb_matrix(
+            f"{vectors_dir}/glove-wiki-gigaword-{embedding_dim}.bin",
+            embedding_dim,
+            sub_word=False,
+            dataset_name=dataset_name,
+        )
+
+        if args.normalize_entity_mtx:
+            entity_matrix = normalize(entity_matrix, axis=1)
+            entity_matrix = torch.from_numpy(entity_matrix.astype(np.float32))
+
         entity_initializer = PretrainedInitializer(
-            w2v.get_emb_matrix(
-                f"{vectors_dir}/glove-wiki-gigaword-{embedding_dim}.bin",
-                embedding_dim,
-                sub_word=False,
-                dataset_name=dataset_name,
-            )
+            entity_matrix
         )
     elif init == "bert":
-        bert_emb_matrix = get_bert_embeddings(
+        entity_matrix = get_bert_embeddings(
             layers=bert_layer,
             layer_weights=bert_layer_weights,
             dataset_name=dataset_name,
@@ -161,7 +191,11 @@ def get_entity_initializer(
             weigh_mean=bert_weigh,
         )
 
-        entity_initializer = PretrainedInitializer(bert_emb_matrix)
+        if args.normalize_entity_mtx:
+            entity_matrix = normalize(entity_matrix, axis=1)
+            entity_matrix = torch.from_numpy(entity_matrix.astype(np.float32))
+
+        entity_initializer = PretrainedInitializer(entity_matrix)
     else:
         entity_initializer = config["pipeline"]["model_kwargs"]["entity_initializer"]
     return entity_initializer
@@ -390,6 +424,12 @@ if __name__ == "__main__":
         default=None,
         nargs="?",
         help="Dropout rate on ...",
+    )
+    parser.add_argument(
+        "--normalize_entity_mtx",
+        type=str2bool,
+        default=False,
+        help="Normalize every entity vector to L2-norm=1",
     )
 
     args = parser.parse_args()
