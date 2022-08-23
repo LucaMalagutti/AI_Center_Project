@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from utils import *
+from sklearn.preprocessing import normalize
 
 
 class MuRP(torch.nn.Module):
@@ -104,9 +105,17 @@ class MuRE(torch.nn.Module):
             self.E.to(device)
         else:
             self.E.weight.data = self.E.weight.data.double()
-            self.E.weight.data = mult_factor * torch.randn(
+            init_matrix = torch.randn(
+                (len(d.entities), dim), dtype=torch.double
+            ).numpy()
+            
+            init_matrix = normalize(init_matrix, axis=1)
+            
+            """self.E.weight.data = mult_factor * torch.randn(
                 (len(d.entities), dim), dtype=torch.double, device=device
-            )
+            )"""
+            
+            self.E.weight.data = mult_factor * torch.from_numpy(init_matrix.astype(np.float32)).to(device)
 
         if rel_mat is not None:
             self.Wu = torch.nn.Parameter(rel_mat.repeat(2, 1))
@@ -168,6 +177,7 @@ class MuRE_TransE(torch.nn.Module):
         mult_factor=1e-3,
         transe_enable_bias=False,
         transe_bias_mode=None,
+        transe_bias_init=None, 
         transe_enable_mtx=False,
         transe_enable_vec=False,
         distmult_score_function=False,
@@ -181,6 +191,7 @@ class MuRE_TransE(torch.nn.Module):
 
         self.transe_enable_bias = transe_enable_bias
         self.transe_bias_mode = transe_bias_mode
+        self.transe_bias_init = transe_bias_init
         self.transe_enable_mtx = transe_enable_mtx
         self.transe_enable_vec = transe_enable_vec
         self.distmult_score_function = distmult_score_function
@@ -232,11 +243,19 @@ class MuRE_TransE(torch.nn.Module):
                 len(d.entities), dtype=torch.double, requires_grad=True, device=device
             )
         )
-        self.bo = torch.nn.Parameter(
-            torch.zeros(
-                len(d.entities), dtype=torch.double, requires_grad=True, device=device
+        
+        if self.transe_bias_init == "ones":
+            self.bo = torch.nn.Parameter(
+                torch.ones(
+                    len(d.entities), dtype=torch.double, requires_grad=True, device=device
+                )
             )
-        )
+        else:
+            self.bo = torch.nn.Parameter(
+                torch.zeros(
+                    len(d.entities), dtype=torch.double, requires_grad=True, device=device
+                )
+            )
 
     def forward(self, u_idx, r_idx, v_idx):
         u = self.E.weight[u_idx]

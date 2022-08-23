@@ -35,6 +35,7 @@ class Experiment:
         mult_factor=None,
         transe_enable_bias=False,
         transe_bias_mode=None,
+        transe_bias_init=None,
         transe_enable_mtx=False,
         transe_enable_vec=False,
         distmult_score_function=False,
@@ -54,6 +55,7 @@ class Experiment:
         self.mult_factor = mult_factor
         self.transe_enable_bias = transe_enable_bias
         self.transe_bias_mode = transe_bias_mode
+        self.transe_bias_init = transe_bias_init
         self.transe_enable_mtx = transe_enable_mtx
         self.transe_enable_vec = transe_enable_vec
         self.distmult_score_function = distmult_score_function
@@ -229,6 +231,7 @@ class Experiment:
                 mult_factor=self.mult_factor,
                 transe_enable_bias=self.transe_enable_bias,
                 transe_bias_mode=self.transe_bias_mode,
+                transe_bias_init=self.transe_bias_init,
                 transe_enable_mtx=self.transe_enable_mtx,
                 transe_enable_vec=self.transe_enable_vec,
                 distmult_score_function=self.distmult_score_function,
@@ -490,6 +493,12 @@ if __name__ == "__main__":
         help="Specify the bias terms to include from mure",
     )
     parser.add_argument(
+        "--transe_bias_init",
+        type=str,
+        default="zero",
+        help="Specify the bias terms to include from mure",
+    )
+    parser.add_argument(
         "--transe_enable_mtx",
         type=str2bool,
         default=False,
@@ -614,10 +623,6 @@ if __name__ == "__main__":
         args.distmult_sqdist_mode = ["subject", "object"]
         
     if args.transe_enable_bias and (args.transe_bias_mode == "both"):
-        print("----------------------------")
-        print("----------------------------")
-        print("----------------------------")
-        print("----------------------------")
         args.transe_bias_mode = ["subject", "object"]
 
     data_dir = "data/%s/" % dataset
@@ -642,6 +647,7 @@ if __name__ == "__main__":
         mult_factor=args.mult_factor,
         transe_enable_bias=args.transe_enable_bias,
         transe_bias_mode=args.transe_bias_mode,
+        transe_bias_init=args.transe_bias_init,
         transe_enable_mtx=args.transe_enable_mtx,
         transe_enable_vec=args.transe_enable_vec,
         distmult_score_function=args.distmult_score_function,
