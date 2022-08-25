@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 from utils import *
-from sklearn.preprocessing import normalize
 
 
 class MuRP(torch.nn.Module):
@@ -105,17 +104,9 @@ class MuRE(torch.nn.Module):
             self.E.to(device)
         else:
             self.E.weight.data = self.E.weight.data.double()
-            init_matrix = torch.randn(
-                (len(d.entities), dim), dtype=torch.double
-            ).numpy()
-            
-            init_matrix = normalize(init_matrix, axis=1)
-            
-            """self.E.weight.data = mult_factor * torch.randn(
+            self.E.weight.data = mult_factor * torch.randn(
                 (len(d.entities), dim), dtype=torch.double, device=device
-            )"""
-            
-            self.E.weight.data = mult_factor * torch.from_numpy(init_matrix.astype(np.float32)).to(device)
+            )
 
         if rel_mat is not None:
             self.Wu = torch.nn.Parameter(rel_mat.repeat(2, 1))
