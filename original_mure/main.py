@@ -42,7 +42,7 @@ class Experiment:
         distmult_score_function=False,
         distmult_sqdist=False,
         distmult_sqdist_mode=None,
-        normalize_at_step= False
+        normalize_at_step=False,
     ):
         self.model = model
         self.learning_rate = learning_rate
@@ -195,7 +195,7 @@ class Experiment:
                 dataset_name=dataset,
                 sub_word=False,
             )
-            
+
             if args.normalize_rel_vec:
                 rel_vec = normalize(rel_vec, axis=1)
                 rel_vec = torch.from_numpy(rel_vec.astype(np.float32))
@@ -205,7 +205,7 @@ class Experiment:
                 dataset_name=dataset,
                 bert_model="prajjwal1/bert-mini",
             )
-            
+
             if args.normalize_rel_vec:
                 rel_vec = normalize(rel_vec, axis=1)
                 rel_vec = torch.from_numpy(rel_vec.astype(np.float32))
@@ -218,7 +218,7 @@ class Experiment:
                 dataset_name=dataset,
                 sub_word=False,
             )
-            
+
             if args.normalize_rel_mat:
                 rel_mat = normalize(rel_mat, axis=1)
                 rel_mat = torch.from_numpy(rel_mat.astype(np.float32))
@@ -228,7 +228,7 @@ class Experiment:
                 dataset_name=dataset,
                 bert_model="prajjwal1/bert-mini",
             )
-            
+
             if args.normalize_rel_mat:
                 rel_mat = normalize(rel_mat, axis=1)
                 rel_mat = torch.from_numpy(rel_mat.astype(np.float32))
@@ -255,7 +255,7 @@ class Experiment:
                 transe_enable_vec=self.transe_enable_vec,
                 distmult_score_function=self.distmult_score_function,
                 distmult_sqdist=self.distmult_sqdist,
-                distmult_sqdist_mode=self.distmult_sqdist_mode
+                distmult_sqdist_mode=self.distmult_sqdist_mode,
             )
         else:
             model = MuRE(
@@ -284,10 +284,10 @@ class Experiment:
         for it in range(1, self.num_iterations + 1):
             start_train = time.time()
             model.train()
-            model.E.requires_grad=False
-            if (it >= args.freeze_entity_schedule):
+            model.E.eval()
+            """if (it >= args.freeze_entity_schedule):
                 print("training entity")
-                model.E.requires_grad=True
+                model.E.requires_grad=True"""
 
             losses = []
             np.random.shuffle(train_data_idxs)
@@ -343,7 +343,9 @@ class Experiment:
                 opt.step()
                 losses.append(loss.item())
                 if self.normalize_at_step:
-                    model.E.weight.data = torch.nn.functional.normalize(model.E.weight.data, p=2.0, dim=1, eps=1e-12, out=None)
+                    model.E.weight.data = torch.nn.functional.normalize(
+                        model.E.weight.data, p=2.0, dim=1, eps=1e-12, out=None
+                    )
             print(it)
             print(time.time() - start_train)
             print(np.mean(losses))
@@ -353,8 +355,7 @@ class Experiment:
                     print("Test:")
                     self.evaluate(model, d.test_data)
         if args.save_model is not None:
-            torch.save(model, os.path.join(args.save_model,f"{args.run_name}.pth"))
-        
+            torch.save(model, os.path.join(args.save_model, f"{args.run_name}.pth"))
 
 
 def str2bool(v):
@@ -676,12 +677,12 @@ if __name__ == "__main__":
     )
     wandb.config.use_pykeen = False
     wandb.config.update(args)
-    
+
     args.run_name = run_name
-    
+
     if args.distmult_sqdist and (args.distmult_sqdist_mode == "both"):
         args.distmult_sqdist_mode = ["subject", "object"]
-        
+
     if args.transe_enable_bias and (args.transe_bias_mode == "both"):
         args.transe_bias_mode = ["subject", "object"]
 
@@ -712,7 +713,7 @@ if __name__ == "__main__":
         transe_enable_vec=args.transe_enable_vec,
         distmult_score_function=args.distmult_score_function,
         distmult_sqdist=args.distmult_sqdist,
-        distmult_sqdist_mode= args.distmult_sqdist_mode,
-        normalize_at_step=args.normalize_at_step
+        distmult_sqdist_mode=args.distmult_sqdist_mode,
+        normalize_at_step=args.normalize_at_step,
     )
     experiment.train_and_eval()
