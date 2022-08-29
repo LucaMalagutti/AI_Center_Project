@@ -279,15 +279,21 @@ class Experiment:
         model.to(device)
 
         # er_vocab = self.get_er_vocab(train_data_idxs)
+        previous_E = model.E.weight.data
 
         print("Starting training...")
         for it in range(1, self.num_iterations + 1):
             start_train = time.time()
             model.train()
-            model.E.eval()
-            """if (it >= args.freeze_entity_schedule):
-                print("training entity")
-                model.E.requires_grad=True"""
+
+            if it < args.freeze_entity_schedule:
+                print("not training entity")
+                model.E.eval()
+                model.E.weight.requires_grad = False
+                print(model.E.weight.requires_grad)
+                # print(model.E.weight.data)
+                # print(torch.equal(previous_E, model.E.weight.data))
+                previous_E = model.E.weight.data
 
             losses = []
             np.random.shuffle(train_data_idxs)
