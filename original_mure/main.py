@@ -12,6 +12,7 @@ from sklearn.preprocessing import normalize
 import sys
 import wandb
 from typing import Union
+import os
 
 
 sys.path.insert(0, "..")
@@ -194,12 +195,20 @@ class Experiment:
                 dataset_name=dataset,
                 sub_word=False,
             )
+            
+            if args.normalize_rel_vec:
+                rel_vec = normalize(rel_vec, axis=1)
+                rel_vec = torch.from_numpy(rel_vec.astype(np.float32))
         elif args.relation_init == "bert":
             rel_vec = get_bert_embeddings_relation(
                 layers=args.bert_layer,
                 dataset_name=dataset,
                 bert_model="prajjwal1/bert-mini",
             )
+            
+            if args.normalize_rel_vec:
+                rel_vec = normalize(rel_vec, axis=1)
+                rel_vec = torch.from_numpy(rel_vec.astype(np.float32))
         else:
             rel_vec = None
         if args.relation_matrix_init == "glove":
@@ -209,12 +218,20 @@ class Experiment:
                 dataset_name=dataset,
                 sub_word=False,
             )
+            
+            if args.normalize_rel_mat:
+                rel_mat = normalize(rel_mat, axis=1)
+                rel_mat = torch.from_numpy(rel_mat.astype(np.float32))
         elif args.relation_matrix_init == "bert":
             rel_mat = get_bert_embeddings_relation(
                 layers=args.bert_layer,
                 dataset_name=dataset,
                 bert_model="prajjwal1/bert-mini",
             )
+            
+            if args.normalize_rel_mat:
+                rel_mat = normalize(rel_mat, axis=1)
+                rel_mat = torch.from_numpy(rel_mat.astype(np.float32))
         else:
             rel_mat = None
 
@@ -331,6 +348,9 @@ class Experiment:
                 if not it % 5:
                     print("Test:")
                     self.evaluate(model, d.test_data)
+        if args.save_model is not None:
+            torch.save(model, os.path.join(args.save_model,f"{args.run_name}.pth"))
+        
 
 
 def str2bool(v):
@@ -393,11 +413,23 @@ if __name__ == "__main__":
         help="How to initialise relation embeddings: baseline, glove, bert",
     )
     parser.add_argument(
+        "--normalize_rel_vec",
+        type=str2bool,
+        default=False,
+        help="Normalize every relation vector to L2-norm=1",
+    )
+    parser.add_argument(
         "--relation_matrix_init",
         type=str,
         default=None,
         nargs="?",
         help="How to initialise relation matrix mure: baseline, glove, bert",
+    )
+    parser.add_argument(
+        "--normalize_rel_mat",
+        type=str2bool,
+        default=False,
+        help="Normalize every relation vector to L2-norm=1",
     )
     parser.add_argument(
         "--random_seed",
@@ -563,6 +595,12 @@ if __name__ == "__main__":
         default=False,
         help="Intermediate score function between distmult and MuRE",
     )
+    parser.add_argument(
+        "--save_model",
+        type=str,
+        default=None,
+        help="Indicate directory where to save the trained model",
+    )
 
     args = parser.parse_args()
 
@@ -628,6 +666,8 @@ if __name__ == "__main__":
     )
     wandb.config.use_pykeen = False
     wandb.config.update(args)
+    
+    args.run_name = run_name
     
     if args.distmult_sqdist and (args.distmult_sqdist_mode == "both"):
         args.distmult_sqdist_mode = ["subject", "object"]
