@@ -284,6 +284,10 @@ class Experiment:
         for it in range(1, self.num_iterations + 1):
             start_train = time.time()
             model.train()
+            model.E.requires_grad=False
+            if (it >= args.freeze_entity_schedule):
+                print("training entity")
+                model.E.requires_grad=True
 
             losses = []
             np.random.shuffle(train_data_idxs)
@@ -600,6 +604,12 @@ if __name__ == "__main__":
         type=str,
         default=None,
         help="Indicate directory where to save the trained model",
+    )
+    parser.add_argument(
+        "--freeze_entity_schedule",
+        type=int,
+        default=0,
+        help="freeze entity up to this iteration",
     )
 
     args = parser.parse_args()
