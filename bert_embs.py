@@ -6,7 +6,7 @@ import pickle
 from tqdm import tqdm
 from pykeen.datasets import WN18RR, FB15k237
 from nltk import PorterStemmer
-import pylcs
+# import pylcs
 import pdb
 import os
 

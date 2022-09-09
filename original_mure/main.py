@@ -518,7 +518,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--bert_desc",
-        action="store_true",
+        type=str2bool,
+        default=False,
         help="use entity descriptions to init BERT embs",
     )
     parser.add_argument(
@@ -620,6 +621,8 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    args.bert_layer = [int(x) for x in args.bert_layer]
 
     bert_layer_weights = []
     if args.bert_layer_weight_1 is not None:

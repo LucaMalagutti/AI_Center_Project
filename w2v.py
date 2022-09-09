@@ -11,13 +11,23 @@ def get_id_description_dict(dataset_name):
     if dataset_name == "wn18rr":
         id_desc_dict = {}
 
-        with open("aux_data/WN18RR/wordnet-mlj12-definitions.txt", "r") as f:
-            for line in f:
-                line_list = line.split("\t")
-                idx = line_list[0]
-                desc = line_list[-1]
+        try:
+            with open("aux_data/WN18RR/wordnet-mlj12-definitions.txt", "r") as f:
+                for line in f:
+                    line_list = line.split("\t")
+                    idx = line_list[0]
+                    desc = line_list[-1]
 
-                id_desc_dict[idx] = desc
+                    id_desc_dict[idx] = desc
+        except FileNotFoundError:
+            with open("../aux_data/WN18RR/wordnet-mlj12-definitions.txt", "r") as f:
+                for line in f:
+                    line_list = line.split("\t")
+                    idx = line_list[0]
+                    desc = line_list[-1]
+
+                    id_desc_dict[idx] = desc
+
         return id_desc_dict
     else:
         raise ValueError
