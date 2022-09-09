@@ -6,6 +6,7 @@ import pickle
 from tqdm import tqdm
 from pykeen.datasets import WN18RR, FB15k237
 from nltk import PorterStemmer
+from pykeen.datasets.analysis import get_entity_relation_co_occurrence_df
 # import pylcs
 import pdb
 import os
@@ -137,6 +138,7 @@ def get_bert_embeddings(
     weigh_mean=False,
     layer_weights=None,
     mure_init=False,
+    entity_and_relation_input=False
 ):
     dataset_name = dataset_name.lower()
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
@@ -165,36 +167,85 @@ def get_bert_embeddings(
 
     emb_matrix = np.zeros((len(entity_dict), embedding_dim))
 
-    for entity_id in tqdm(entity_dict):
-        entity_emb_idx = entity_dict[entity_id]
-        try:
-            entity_name = entity_id_to_word[str(entity_id)]
+    if entity_and_relation_input:
+        entity_relation_co_occurrence_df = get_entity_relation_co_occurrence_df(dataset)
 
-            if use_entity_descriptions:
-                input_sentence = (
-                    f"{entity_name} : {entity_id_to_description[str(entity_id)]}"
+        for entity_id in tqdm(entity_dict):
+            entity_emb_idx = entity_dict[entity_id]
+
+            temp_entity_rel_counts = entity_relation_co_occurrence_df[entity_relation_co_occurrence_df['entity_id'] == entity_emb_idx][['relation_label', 'count']].to_dict()
+            entity_rel_counts = dict()
+
+            for k, v in temp_entity_rel_counts['relation_label'].items():
+                entity_rel_counts[v] = temp_entity_rel_counts['count'][k]
+
+            try:
+                entity_name = entity_id_to_word[str(entity_id)]
+                
+                if use_entity_descriptions:
+                    raise NotImplementedError("entity + relation input with description not implemented")
+                
+                entity_embs = None
+                for relation_name in list(entity_rel_counts):
+                    input_sentence = f"{entity_name} {relation_name}"
+
+                    idx_list = [
+                        get_word_idx(input_sentence, word) for word in entity_name.split(" ")
+                    ]
+                    emb = get_word_vector(
+                        input_sentence,
+                        idx_list,
+                        tokenizer,
+                        model,
+                        layers,
+                        weigh_mean,
+                        entity_name,
+                        layer_weights,
+                    )
+
+                    if entity_embs is None:
+                        entity_embs = emb.unsqueeze(0) * entity_rel_counts[relation_name]
+                    else:
+                        entity_embs = torch.cat((entity_embs, emb.unsqueeze(0)), dim=0)
+
+                w_avg_emb = torch.mean(entity_embs, dim=0)
+                emb_matrix[entity_emb_idx, :] = w_avg_emb
+
+            except KeyError as _:
+                # print(f"{entity_id} missing")
+                pass
+
+    else:
+        for entity_id in tqdm(entity_dict):
+            entity_emb_idx = entity_dict[entity_id]
+            try:
+                entity_name = entity_id_to_word[str(entity_id)]
+
+                if use_entity_descriptions:
+                    input_sentence = (
+                        f"{entity_name} : {entity_id_to_description[str(entity_id)]}"
+                    )
+                else:
+                    input_sentence = entity_name
+
+                idx_list = [
+                    get_word_idx(input_sentence, word) for word in entity_name.split(" ")
+                ]
+                emb = get_word_vector(
+                    input_sentence,
+                    idx_list,
+                    tokenizer,
+                    model,
+                    layers,
+                    weigh_mean,
+                    entity_name,
+                    layer_weights,
                 )
-            else:
-                input_sentence = entity_name
 
-            idx_list = [
-                get_word_idx(input_sentence, word) for word in entity_name.split(" ")
-            ]
-            emb = get_word_vector(
-                input_sentence,
-                idx_list,
-                tokenizer,
-                model,
-                layers,
-                weigh_mean,
-                entity_name,
-                layer_weights,
-            )
-
-            emb_matrix[entity_emb_idx, :] = emb
-        except KeyError as _:
-            # print(f"{entity_id} missing")
-            pass
+                emb_matrix[entity_emb_idx, :] = emb
+            except KeyError as _:
+                # print(f"{entity_id} missing")
+                pass
 
     emb_matrix = torch.from_numpy(emb_matrix.astype(np.float32))
 

@@ -189,6 +189,7 @@ def get_entity_initializer(
             bert_model="prajjwal1/bert-mini",
             use_entity_descriptions=bert_desc,
             weigh_mean=bert_weigh,
+            entity_and_relation_input=args.bert_entity_and_relation
         )
 
         if args.normalize_entity_mtx:
@@ -405,6 +406,11 @@ if __name__ == "__main__":
         help="use entity descriptions to init BERT embs",
     )
     parser.add_argument(
+        "--bert_entity_and_relation",
+        action="store_true",
+        help="Use both entity name and relation name as input to get entity embedding from bert",
+    )
+    parser.add_argument(
         "--dropout_0",
         type=float,
         default=None,
@@ -433,6 +439,8 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    args.bert_layer = [int(x) for x in args.bert_layer]
 
     set_all_seeds(args.random_seed)
 
