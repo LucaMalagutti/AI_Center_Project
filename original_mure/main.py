@@ -172,6 +172,7 @@ class Experiment:
                 use_entity_descriptions=args.bert_desc,
                 weigh_mean=False,
                 mure_init=True,
+                entity_and_relation_input=args.bert_entity_and_relation,
             )
 
             if args.normalize_entity_mtx:
@@ -618,6 +619,12 @@ if __name__ == "__main__":
         type=int,
         default=0,
         help="freeze entity up to this iteration",
+    )
+    parser.add_argument(
+        "--bert_entity_and_relation",
+        type=str2bool,
+        default=False,
+        help="Use both entity name and relation name as input to get entity embedding from bert",
     )
 
     args = parser.parse_args()
