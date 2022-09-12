@@ -148,6 +148,8 @@ def get_entity_initializer(
             entity_matrix = normalize(entity_matrix, axis=1)
             entity_matrix = torch.from_numpy(entity_matrix.astype(np.float32))
 
+        entity_matrix = entity_matrix * args.mure_mult_factor
+
         entity_initializer = PretrainedInitializer(
             entity_matrix
         )
@@ -163,6 +165,8 @@ def get_entity_initializer(
             entity_matrix = normalize(entity_matrix, axis=1)
             entity_matrix = torch.from_numpy(entity_matrix.astype(np.float32))
 
+        entity_matrix = entity_matrix * args.mure_mult_factor
+
         entity_initializer = PretrainedInitializer(
             entity_matrix
         )
@@ -177,6 +181,8 @@ def get_entity_initializer(
         if args.normalize_entity_mtx:
             entity_matrix = normalize(entity_matrix, axis=1)
             entity_matrix = torch.from_numpy(entity_matrix.astype(np.float32))
+
+        entity_matrix = entity_matrix * args.mure_mult_factor
 
         entity_initializer = PretrainedInitializer(
             entity_matrix
@@ -195,6 +201,8 @@ def get_entity_initializer(
         if args.normalize_entity_mtx:
             entity_matrix = normalize(entity_matrix, axis=1)
             entity_matrix = torch.from_numpy(entity_matrix.astype(np.float32))
+        
+        entity_matrix = entity_matrix * args.mure_mult_factor
 
         entity_initializer = PretrainedInitializer(entity_matrix)
     else:
@@ -268,7 +276,7 @@ def pipeline_from_config(
 
     if model_name == "mure":
         if init == "baseline":
-            config["pipeline"]["model_kwargs"]["entity_initializer_kwargs"] = dict( std=1.0e-03,)
+            config["pipeline"]["model_kwargs"]["entity_initializer_kwargs"] = dict(std=args.mure_mult_factor)
         if relation_init == None:
             config["pipeline"]["model_kwargs"]["relation_initializer_kwargs"] = dict( std=1.0e-03,)
         if relation_matrix_init == None:
@@ -436,6 +444,12 @@ if __name__ == "__main__":
         type=str2bool,
         default=False,
         help="Normalize every entity vector to L2-norm=1",
+    )
+    parser.add_argument(
+        "--mure_mult_factor",
+        type=float,
+        default=1,
+        help="Constant factor that is multiplied to the entity matrix (in MuRE)"
     )
 
     args = parser.parse_args()
