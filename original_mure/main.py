@@ -1,4 +1,3 @@
-from mimetypes import init
 import numpy as np
 import torch
 import time
@@ -11,7 +10,6 @@ import argparse
 from sklearn.preprocessing import normalize
 import sys
 import wandb
-from typing import Union
 import os
 
 
@@ -134,10 +132,12 @@ class Experiment:
                 "both.realistic.hits_at_5": np.mean(hits[4]),
                 "both.realistic.hits_at_3": np.mean(hits[2]),
                 "both.realistic.hits_at_1": np.mean(hits[0]),
-                "both.realistic.adjusted_inverse_harmonic_mean_rank": np.mean(ranks),
-                "Mean reciprocal rank": np.mean(1.0 / np.array(ranks)),
+                "both.realistic.arithmetic_mean_rank": np.mean(ranks),
+                "both.realistic.adjusted_inverse_harmonic_mean_rank": np.mean(1.0 / np.array(ranks)),
             }
         )
+
+        return np.mean(hits[9])
 
     def train_and_eval(self):
         print("Training the %s model..." % self.model)
@@ -282,6 +282,8 @@ class Experiment:
         # er_vocab = self.get_er_vocab(train_data_idxs)
         previous_E = model.E.weight.data
 
+        hits_at_10_per_iteration = []
+
         print("Starting training...")
         for it in range(1, self.num_iterations + 1):
             start_train = time.time()
@@ -360,7 +362,16 @@ class Experiment:
             with torch.no_grad():
                 if not it % 5:
                     print("Test:")
-                    self.evaluate(model, d.test_data)
+                    last_hits_at_10 = self.evaluate(model, d.test_data)
+                    hits_at_10_per_iteration.append(last_hits_at_10)
+            
+            if args.early_stopping:
+                if len(hits_at_10_per_iteration) > args.early_stopping_patience:
+                    if hits_at_10_per_iteration.index(max(hits_at_10_per_iteration)) < it - args.early_stopping_patience:
+                        print("Triggering early stopping")
+                        print(f"Best iteration occurred at: {hits_at_10_per_iteration.index(max(hits_at_10_per_iteration))}")
+                        break
+
         if args.save_model is not None:
             torch.save(model, os.path.join(args.save_model, f"{args.run_name}.pth"))
 
@@ -625,6 +636,18 @@ if __name__ == "__main__":
         type=str2bool,
         default=False,
         help="Use both entity name and relation name as input to get entity embedding from bert",
+    )
+    parser.add_argument(
+        "--early_stopping",
+        type=str2bool,
+        default=False,
+        help="Use early stopping to stop training when validation loss stops increasing",
+    )
+    parser.add_argument(
+        "--early_stopping_patience",
+        type=int,
+        default=30,
+        help="Number of epochs to wait before early-stopping training",
     )
 
     args = parser.parse_args()
