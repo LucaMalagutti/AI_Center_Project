@@ -366,10 +366,10 @@ class Experiment:
                     hits_at_10_per_iteration.append(last_hits_at_10)
             
             if args.early_stopping:
-                if len(hits_at_10_per_iteration) > args.early_stopping_patience:
-                    if hits_at_10_per_iteration.index(max(hits_at_10_per_iteration)) < it - args.early_stopping_patience:
+                if len(hits_at_10_per_iteration) * 5 > args.early_stopping_patience:
+                    if hits_at_10_per_iteration.index(max(hits_at_10_per_iteration)) < (it - args.early_stopping_patience) // 5:
                         print("Triggering early stopping")
-                        print(f"Best iteration occurred at: {hits_at_10_per_iteration.index(max(hits_at_10_per_iteration))}")
+                        print(f"Best iteration occurred around: {hits_at_10_per_iteration.index(max(hits_at_10_per_iteration)) * 5}")
                         break
 
         if args.save_model is not None:
