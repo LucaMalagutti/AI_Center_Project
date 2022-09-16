@@ -267,36 +267,41 @@ class Experiment:
                 rel_mat=rel_mat,
                 mult_factor=self.mult_factor,
             )
-        param_names = [name for name, _ in model.named_parameters()]
+
+        if args.freeze_num_iter > 0:
+            for param in model.named_parameters():
+                if param[0] == 'E.weight':
+                    param[1].requires_grad = False
 
         if (self.opt == "Adam") and (self.model != "poincare"):
             opt = Adam(model.parameters(), lr=self.learning_rate)
         else:
             opt = RiemannianSGD(
-                model.parameters(), lr=self.learning_rate, param_names=param_names
+                list(filter(lambda p: p.requires_grad, model.parameters())),
+                lr=args.freeze_entity_lr if args.freeze_entity_lr is not None else self.learning_rate,
+                param_names=[name for name, p in model.named_parameters() if p.requires_grad]
             )
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
 
-        # er_vocab = self.get_er_vocab(train_data_idxs)
-        previous_E = model.E.weight.data
-
         hits_at_10_per_iteration = []
 
         print("Starting training...")
         for it in range(1, self.num_iterations + 1):
+            if it == args.freeze_num_iter + 1:
+                for param in model.named_parameters():
+                    if param[0] == 'E.weight':
+                        param[1].requires_grad = True
+
+                opt = RiemannianSGD(
+                    list(filter(lambda p: p.requires_grad, model.parameters())),
+                    lr=self.learning_rate,
+                    param_names=[name for name, p in model.named_parameters() if p.requires_grad]
+                )
+
             start_train = time.time()
             model.train()
-
-            if it < args.freeze_entity_schedule:
-                print("not training entity")
-                model.E.eval()
-                model.E.weight.requires_grad = False
-                print(model.E.weight.requires_grad)
-                # print(model.E.weight.data)
-                # print(torch.equal(previous_E, model.E.weight.data))
-                previous_E = model.E.weight.data
 
             losses = []
             np.random.shuffle(train_data_idxs)
@@ -626,12 +631,6 @@ if __name__ == "__main__":
         help="Indicate directory where to save the trained model",
     )
     parser.add_argument(
-        "--freeze_entity_schedule",
-        type=int,
-        default=0,
-        help="freeze entity up to this iteration",
-    )
-    parser.add_argument(
         "--bert_entity_and_relation",
         type=str2bool,
         default=False,
@@ -648,6 +647,19 @@ if __name__ == "__main__":
         type=int,
         default=30,
         help="Number of epochs to wait before early-stopping training",
+    )
+    parser.add_argument(
+        "--freeze_num_iter",
+        type=int,
+        default=0,
+        help="Number of iterations in which the entity matrix remains frozen at the start of training"
+    )
+    parser.add_argument(
+        "--freeze_entity_lr",
+        type=float,
+        default=None,
+        nargs="?",
+        help="Training learning rate to keep while the entity matrix is frozen",
     )
 
     args = parser.parse_args()
