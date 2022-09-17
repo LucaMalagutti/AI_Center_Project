@@ -273,8 +273,11 @@ class Experiment:
                 if param[0] == 'E.weight':
                     param[1].requires_grad = False
 
-        if (self.opt == "Adam") and (self.model != "poincare"):
-            opt = Adam(model.parameters(), lr=self.learning_rate)
+        if (self.opt.lower() == "adam") and (self.model != "poincare"):
+            opt = Adam(
+                model.parameters(),
+                lr=args.freeze_entity_lr if args.freeze_entity_lr is not None else self.learning_rate,
+            )
         else:
             opt = RiemannianSGD(
                 list(filter(lambda p: p.requires_grad, model.parameters())),
@@ -294,11 +297,17 @@ class Experiment:
                     if param[0] == 'E.weight':
                         param[1].requires_grad = True
 
-                opt = RiemannianSGD(
-                    list(filter(lambda p: p.requires_grad, model.parameters())),
-                    lr=self.learning_rate,
-                    param_names=[name for name, p in model.named_parameters() if p.requires_grad]
-                )
+                if (self.opt.lower() == "adam"):
+                    opt = Adam(
+                        list(filter(lambda p: p.requires_grad, model.parameters())),
+                        lr=self.learning_rate
+                    )
+                else:
+                    opt = RiemannianSGD(
+                        list(filter(lambda p: p.requires_grad, model.parameters())),
+                        lr=self.learning_rate,
+                        param_names=[name for name, p in model.named_parameters() if p.requires_grad]
+                    )
 
             start_train = time.time()
             model.train()
